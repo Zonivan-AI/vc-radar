@@ -1,0 +1,380 @@
+# =============================================================================
+# Meridian VC Intelligence Platform - VC Firm Registry
+# =============================================================================
+# Master list of all 20 VC firms tracked in the platform.
+# portfolio_url: URL to the firm's portfolio page (null if unknown).
+# focus_sectors: Primary investment thesis areas.
+# stage_focus: Typical investment stages.
+# hq_region: Geographic region of headquarters.
+# =============================================================================
+
+vc_firms:
+  # --------------------------------------------------------------------------
+  # Tier 1 - Large / Well-Known Funds
+  # --------------------------------------------------------------------------
+  - name: "NEA Capital"
+    slug: "nea-capital"
+    website: "https://www.nea.com"
+    portfolio_url: "https://www.nea.com/portfolio"
+    focus_sectors:
+      - "AI/ML"
+      - "Enterprise Software"
+      - "Consumer Tech"
+      - "Healthcare"
+    stage_focus:
+      - "Seed"
+      - "Series A"
+      - "Series B"
+      - "Series C"
+      - "Growth"
+    hq_region: "US-SF Bay"
+    hq_city: "Menlo Park"
+    hq_country: "USA"
+    description: "Multi-stage technology venture firm; one of the largest VCs globally."
+
+  - name: "NFX"
+    slug: "nfx"
+    website: "https://www.nfx.com"
+    portfolio_url: "https://www.nfx.com/portfolio"
+    focus_sectors:
+      - "Network Effects"
+      - "AI/ML"
+      - "Marketplace"
+      - "Fintech"
+    stage_focus:
+      - "Pre-Seed"
+      - "Seed"
+    hq_region: "US-SF Bay"
+    hq_city: "San Francisco"
+    hq_country: "USA"
+    description: "Seed-stage fund focused on companies with network effects."
+
+  - name: "Khosla Ventures"
+    slug: "khosla-ventures"
+    website: "https://www.khosla.com"
+    portfolio_url: "https://www.khosla.com/portfolio"
+    focus_sectors:
+      - "AI/ML"
+      - "Deep Tech"
+      - "Climate Tech"
+      - "Healthcare"
+      - "Robotics"
+    stage_focus:
+      - "Seed"
+      - "Series A"
+      - "Series B"
+    hq_region: "US-SF Bay"
+    hq_city: "Menlo Park"
+    hq_country: "USA"
+    description: "Deep tech and frontier AI investor; wide stage range from seed to growth."
+
+  - name: "Bain Capital Ventures"
+    slug: "bain-capital-ventures"
+    website: "https://www.baincapitalventures.com"
+    portfolio_url: "https://www.baincapitalventures.com/portfolio/"
+    focus_sectors:
+      - "AI/ML"
+      - "Enterprise SaaS"
+      - "Fintech"
+      - "Infrastructure"
+    stage_focus:
+      - "Seed"
+      - "Series A"
+      - "Series B"
+      - "Growth"
+    hq_region: "US-Other"
+    hq_city: "Boston"
+    hq_country: "USA"
+    description: "Growth-stage AI SaaS investor; prefers serial founders."
+
+  - name: "Matrix Partners"
+    slug: "matrix-partners"
+    website: "https://www.matrixpartners.com"
+    portfolio_url: "https://www.matrixpartners.com/portfolio/"
+    focus_sectors:
+      - "AI/ML"
+      - "Enterprise Software"
+      - "SaaS"
+      - "Infrastructure"
+    stage_focus:
+      - "Seed"
+      - "Series A"
+      - "Series B"
+    hq_region: "US-SF Bay"
+    hq_city: "San Francisco"
+    hq_country: "USA"
+    description: "Enterprise AI focus; experienced technical founders preferred."
+
+  # --------------------------------------------------------------------------
+  # Tier 2 - Mid-Size / Specialist Funds
+  # --------------------------------------------------------------------------
+  - name: "Quiet Capital"
+    slug: "quiet-capital"
+    website: "https://www.quiet.com"
+    portfolio_url: "https://www.quiet.com/portfolio"
+    focus_sectors:
+      - "AI/ML"
+      - "Consumer Tech"
+      - "B2B SaaS"
+      - "Creator Economy"
+    stage_focus:
+      - "Seed"
+      - "Series A"
+    hq_region: "US-SF Bay"
+    hq_city: "San Francisco"
+    hq_country: "USA"
+    description: "Consumer and B2B AI investor; widest age variance in portfolio."
+
+  - name: "Basis Set Ventures"
+    slug: "basis-set-ventures"
+    website: "https://www.basisset.com"
+    portfolio_url: "https://www.basisset.com/portfolio"
+    focus_sectors:
+      - "AI/ML"
+      - "Applied AI"
+      - "Enterprise AI"
+      - "Data Infrastructure"
+    stage_focus:
+      - "Seed"
+      - "Series A"
+    hq_region: "US-SF Bay"
+    hq_city: "San Francisco"
+    hq_country: "USA"
+    description: "Applied AI ops investor; backs veteran academics and ex-BigTech founders."
+
+  - name: "Race Capital"
+    slug: "race-capital"
+    website: "https://www.race.capital"
+    portfolio_url: "https://www.race.capital/portfolio"
+    focus_sectors:
+      - "AI/ML"
+      - "AI Infrastructure"
+      - "Developer Tools"
+      - "Deep Tech"
+    stage_focus:
+      - "Pre-Seed"
+      - "Seed"
+    hq_region: "US-SF Bay"
+    hq_city: "San Francisco"
+    hq_country: "USA"
+    description: "Technical AI-infra bias; values deep domain experience."
+
+  - name: "Unusual Ventures"
+    slug: "unusual-ventures"
+    website: "https://www.unusual.vc"
+    portfolio_url: "https://www.unusual.vc/portfolio"
+    focus_sectors:
+      - "AI/ML"
+      - "Enterprise Software"
+      - "Developer Tools"
+      - "B2B SaaS"
+    stage_focus:
+      - "Pre-Seed"
+      - "Seed"
+    hq_region: "US-SF Bay"
+    hq_city: "Menlo Park"
+    hq_country: "USA"
+    description: "Pre-seed AI investor; youngest average founder age in their cohort."
+
+  - name: "Kindred Ventures"
+    slug: "kindred-ventures"
+    website: "https://www.kindredventures.com"
+    portfolio_url: "https://www.kindredventures.com/portfolio"
+    focus_sectors:
+      - "AI/ML"
+      - "Consumer Tech"
+      - "AI Infrastructure"
+      - "Crypto/Web3"
+    stage_focus:
+      - "Pre-Seed"
+      - "Seed"
+    hq_region: "US-SF Bay"
+    hq_city: "San Francisco"
+    hq_country: "USA"
+    description: "Consumer and infra AI investor; Steve Jang Midas lister."
+
+  - name: "ENIAC Ventures"
+    slug: "eniac-ventures"
+    website: "https://www.eniac.vc"
+    portfolio_url: "https://www.eniac.vc/portfolio"
+    focus_sectors:
+      - "AI/ML"
+      - "Mobile-First"
+      - "AI Application Layer"
+      - "Consumer AI"
+    stage_focus:
+      - "Pre-Seed"
+      - "Seed"
+    hq_region: "US-Other"
+    hq_city: "New York"
+    hq_country: "USA"
+    description: "Mobile-first seed fund with AI application layer focus."
+
+  - name: "BootstrapLabs"
+    slug: "bootstraplabs"
+    website: "https://www.bootstraplabs.com"
+    portfolio_url: "https://bootstraplabs.com/portfolio/"
+    focus_sectors:
+      - "Applied AI"
+      - "AI/ML"
+      - "Enterprise AI"
+      - "Deep Tech"
+    stage_focus:
+      - "Seed"
+      - "Series A"
+    hq_region: "US-SF Bay"
+    hq_city: "San Francisco"
+    hq_country: "USA"
+    description: "Applied AI fund; widest age range (30-50) in portfolio founders."
+
+  - name: "Coelius Capital"
+    slug: "coelius-capital"
+    website: "https://www.coeliuscapital.com"
+    portfolio_url: "https://www.coeliuscapital.com/portfolio"
+    focus_sectors:
+      - "AI/ML"
+      - "AI SaaS"
+      - "Enterprise Software"
+    stage_focus:
+      - "Seed"
+      - "Series A"
+    hq_region: "US-SF Bay"
+    hq_city: "San Francisco"
+    hq_country: "USA"
+    description: "Seed/Series A AI SaaS investor; backs young technical founders."
+
+  - name: "Streamlined Ventures"
+    slug: "streamlined-ventures"
+    website: "https://www.streamlinedventures.com"
+    portfolio_url: "https://www.streamlinedventures.com/portfolio"
+    focus_sectors:
+      - "AI/ML"
+      - "Data Analytics"
+      - "Developer Tools"
+      - "Infrastructure"
+    stage_focus:
+      - "Seed"
+    hq_region: "US-SF Bay"
+    hq_city: "Palo Alto"
+    hq_country: "USA"
+    description: "Solo GP seed fund; AI and data focus; prodigy to veteran mix."
+
+  # --------------------------------------------------------------------------
+  # Tier 3 - Emerging / Niche Funds
+  # --------------------------------------------------------------------------
+  - name: "KittyHawk Ventures"
+    slug: "kittyhawk-ventures"
+    website: "https://www.kittyhawk.vc"
+    portfolio_url: "https://www.kittyhawk.vc/portfolio"
+    focus_sectors:
+      - "AI/ML"
+      - "Frontier Tech"
+      - "Deep Tech"
+      - "Robotics"
+    stage_focus:
+      - "Seed"
+      - "Series A"
+    hq_region: "US-Other"
+    hq_city: "Los Angeles"
+    hq_country: "USA"
+    description: "Frontier and deep tech investor; LA-based; veteran founders."
+
+  - name: "111 West Capital"
+    slug: "111-west-capital"
+    website: null
+    portfolio_url: null
+    focus_sectors:
+      - "Healthcare AI"
+      - "AI/ML"
+      - "Digital Health"
+    stage_focus:
+      - "Pre-Seed"
+      - "Seed"
+    hq_region: "US-Other"
+    hq_city: null
+    hq_country: "USA"
+    description: "Healthcare AI micro-fund; backs domain-expert founders."
+
+  - name: "Good Growth Capital"
+    slug: "good-growth-capital"
+    website: null
+    portfolio_url: null
+    focus_sectors:
+      - "Deep Tech"
+      - "Hard Science"
+      - "AI/ML"
+    stage_focus:
+      - "Pre-Seed"
+      - "Seed"
+    hq_region: "US-Other"
+    hq_city: "Los Angeles"
+    hq_country: "USA"
+    description: "Deep tech and hard science investor; USC-affiliated."
+
+  - name: "The Perkins Fund"
+    slug: "the-perkins-fund"
+    website: null
+    portfolio_url: null
+    focus_sectors:
+      - "Enterprise AI"
+      - "AI Cybersecurity"
+      - "AI/ML"
+    stage_focus:
+      - "Seed"
+      - "Series A"
+    hq_region: "US-SF Bay"
+    hq_city: "San Francisco"
+    hq_country: "USA"
+    description: "Women-focused VC; enterprise AI and cybersecurity."
+
+  - name: "BCF Ventures"
+    slug: "bcf-ventures"
+    website: null
+    portfolio_url: null
+    focus_sectors:
+      - "B2B SaaS"
+      - "Industry AI"
+      - "AI/ML"
+      - "Manufacturing AI"
+    stage_focus:
+      - "Seed"
+      - "Series A"
+    hq_region: "Canada"
+    hq_city: "Montreal"
+    hq_country: "Canada"
+    description: "Quebec CVC; B2B SaaS and industry AI; Canadian focus."
+
+  - name: "Blue Sky Equities"
+    slug: "blue-sky-equities"
+    website: null
+    portfolio_url: null
+    focus_sectors:
+      - "AI/ML"
+      - "Seed AI"
+      - "Enterprise Software"
+    stage_focus:
+      - "Seed"
+    hq_region: "Canada"
+    hq_city: "Calgary"
+    hq_country: "Canada"
+    description: "Canadian seed AI investor; Calgary ecosystem; mid-career founders."
+
+# =============================================================================
+# Scraping configuration
+# =============================================================================
+scraping:
+  # Default delay between requests (seconds)
+  request_delay: 2.0
+  # Maximum retries per URL
+  max_retries: 3
+  # User agent for Playwright
+  user_agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+  # Timeout for page loads (ms)
+  page_timeout: 30000
+  # VCs to skip scraping (no public portfolio page)
+  skip_scraping:
+    - "111-west-capital"
+    - "good-growth-capital"
+    - "the-perkins-fund"
+    - "bcf-ventures"
+    - "blue-sky-equities"

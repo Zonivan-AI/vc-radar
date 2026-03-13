@@ -1,0 +1,46 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+venv/
+env/
+
+# Environment
+.env
+.env.local
+.env.production
+.env.*.local
+
+# Build
+.next/
+out/
+dist/
+build/
+*.egg-info/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Supabase
+supabase/.temp/
+
+# Exports (generated)
+exports/*.xlsx
+exports/*.csv
+exports/*.json
+
+# Playwright
+pipeline/playwright-browsers/
+
+# Logs
+*.log
+pipeline_runs/
