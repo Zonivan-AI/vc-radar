@@ -186,6 +186,9 @@ export function GraphPage({ vcs, companies, investments }: GraphPageProps) {
         onNavigateToNode={handleNavigateToNode}
         vcCount={vcCount}
         companyCount={companyCount}
+        vcs={vcs}
+        companies={companies}
+        investments={investments}
       />
 
       {/* Detail Panel */}
