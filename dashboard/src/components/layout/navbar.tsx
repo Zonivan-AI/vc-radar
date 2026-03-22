@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils'
 import {
   ChevronDown, Menu, X, Github, Download,
   Building2, Briefcase, Users, TrendingUp,
-  Compass, Zap
+  Compass, Zap, Radio
 } from 'lucide-react'
 
 const exploreItems = [
@@ -21,22 +21,33 @@ const navItems = [
   { href: '/match', label: 'Match' },
 ]
 
-export function Navbar() {
+interface NavbarProps {
+  variant?: 'default' | 'transparent'
+}
+
+export function Navbar({ variant = 'default' }: NavbarProps) {
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [exploreOpen, setExploreOpen] = useState(false)
 
+  const isTransparent = variant === 'transparent'
+
   return (
-    <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">
+    <nav className={cn(
+      'sticky top-0 z-50 border-b',
+      isTransparent
+        ? 'backdrop-blur-xl border-white/[0.04]'
+        : 'bg-background/80 backdrop-blur-xl border-border'
+    )}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 group">
-            <div className="w-8 h-8 rounded-lg bg-indigo/20 flex items-center justify-center group-hover:bg-indigo/30 transition-colors">
-              <Compass className="w-4 h-4 text-indigo-light" />
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors" style={{ background: 'rgba(124, 143, 255, 0.12)' }}>
+              <Radio className="w-4 h-4" style={{ color: '#7C8FFF' }} />
             </div>
             <span className="text-lg font-bold text-text-primary tracking-tight">
-              Meridian
+              VC Radar
             </span>
           </Link>
 

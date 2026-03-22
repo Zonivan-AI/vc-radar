@@ -8,13 +8,63 @@ import {
   demoGlobalStats, demoAgeBuckets, demoSectorStats,
   demoVCStats, demoCompanies,
 } from '@/lib/demo-data'
+import { getGlobalStats, getAgeBuckets, getSectorStats, getVCStats, getCompanies } from '@/lib/supabase'
+import type { GlobalStats, AgeBucket, SectorStat, VCStats, Company } from '@/lib/types'
 
-export default function HomePage() {
-  const stats = demoGlobalStats
-  const ageBuckets = demoAgeBuckets
-  const sectorStats = demoSectorStats
-  const vcStats = demoVCStats
-  const companies = demoCompanies
+async function fetchHomeData(): Promise<{
+  stats: GlobalStats
+  ageBuckets: AgeBucket[]
+  sectorStats: SectorStat[]
+  vcStats: VCStats[]
+  companies: Company[]
+}> {
+  try {
+    const [stats, ageBuckets, sectorStats, vcStats, companies] = await Promise.all([
+      getGlobalStats(),
+      getAgeBuckets(),
+      getSectorStats(),
+      getVCStats(),
+      getCompanies(),
+    ])
+
+    // Fall back to demo data if Supabase returns empty results
+    const hasRealData =
+      stats !== null &&
+      ageBuckets.length > 0 &&
+      sectorStats.length > 0 &&
+      vcStats.length > 0
+
+    if (!hasRealData) {
+      return {
+        stats: demoGlobalStats,
+        ageBuckets: demoAgeBuckets,
+        sectorStats: demoSectorStats,
+        vcStats: demoVCStats,
+        companies: demoCompanies,
+      }
+    }
+
+    return {
+      stats: stats!,
+      ageBuckets,
+      sectorStats,
+      vcStats,
+      companies: companies.length > 0 ? companies : demoCompanies,
+    }
+  } catch {
+    // Supabase not configured or unavailable — use demo data silently
+    return {
+      stats: demoGlobalStats,
+      ageBuckets: demoAgeBuckets,
+      sectorStats: demoSectorStats,
+      vcStats: demoVCStats,
+      companies: demoCompanies,
+    }
+  }
+}
+
+export default async function HomePage() {
+  const { stats, ageBuckets, sectorStats, vcStats, companies } = await fetchHomeData()
 
   return (
     <div>
@@ -118,7 +168,7 @@ export default function HomePage() {
             Built for founders, by founders
           </h2>
           <p className="text-text-secondary mb-6 max-w-lg mx-auto">
-            Meridian is open-source and community-driven. Help us expand the dataset
+            VC Radar is open-source and community-driven. Help us expand the dataset
             by contributing VCs, companies, or corrections.
           </p>
           <div className="flex items-center justify-center gap-4">

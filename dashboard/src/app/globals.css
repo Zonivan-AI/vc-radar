@@ -1,8 +1,8 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 @layer base {
   * {
@@ -39,6 +39,29 @@
 
   .glass-card-hover {
     @apply glass-card transition-all duration-200 hover:bg-glass-hover hover:border-white/10 hover:shadow-glow-indigo;
+  }
+
+  /* Graph glass panel system */
+  .glass-panel {
+    background: rgba(15, 23, 42, 0.75);
+    backdrop-filter: blur(20px) saturate(150%);
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
+    border: 1px solid rgba(148, 163, 184, 0.08);
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.4),
+      inset 0 0 0 1px rgba(148, 163, 184, 0.05);
+    border-radius: 16px;
+  }
+
+  .glass-panel-strong {
+    background: rgba(15, 23, 42, 0.82);
+    backdrop-filter: blur(24px) saturate(150%);
+    -webkit-backdrop-filter: blur(24px) saturate(150%);
+    border: 1px solid rgba(148, 163, 184, 0.10);
+    box-shadow:
+      0 12px 48px rgba(0, 0, 0, 0.5),
+      inset 0 0 0 1px rgba(148, 163, 184, 0.06);
+    border-radius: 16px;
   }
 
   .stat-card {

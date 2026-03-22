@@ -1,20 +1,44 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
 import { Building2, MapPin, ArrowRight } from 'lucide-react'
 import { FilterBar } from '@/components/ui/filter-bar'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { demoVCStats, demoVCFirms } from '@/lib/demo-data'
+import { getVCStats, getVCFirms } from '@/lib/supabase'
+import type { VCStats, VCFirm } from '@/lib/types'
 
 export default function VCDirectoryPage() {
   const [search, setSearch] = useState('')
   const [stageFilter, setStageFilter] = useState('')
   const [regionFilter, setRegionFilter] = useState('')
 
-  const vcData = demoVCStats.map(stat => {
-    const firm = demoVCFirms.find(f => f.slug === stat.slug)
+  const [vcStats, setVcStats] = useState<VCStats[]>(demoVCStats)
+  const [vcFirms, setVcFirms] = useState<VCFirm[]>(demoVCFirms)
+
+  // Attempt to load live data from Supabase; fall back to demo data on error or
+  // empty result.
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const [stats, firms] = await Promise.all([getVCStats(), getVCFirms()])
+        if (stats.length > 0) {
+          setVcStats(stats)
+        }
+        if (firms.length > 0) {
+          setVcFirms(firms)
+        }
+      } catch {
+        // Supabase not configured or unavailable — keep demo data
+      }
+    }
+    loadData()
+  }, [])
+
+  const vcData = vcStats.map(stat => {
+    const firm = vcFirms.find(f => f.slug === stat.slug)
     return { ...stat, firm }
   })
 
@@ -28,14 +52,14 @@ export default function VCDirectoryPage() {
   }, [vcData, search, stageFilter, regionFilter])
 
   const stages = ['Seed', 'Series A', 'Series B', 'Growth']
-  const regions = [...new Set(demoVCFirms.map(f => f.hq_region).filter(Boolean))]
+  const regions = [...new Set(vcFirms.map(f => f.hq_region).filter(Boolean))]
 
   return (
     <div className="page-container">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-text-primary">VC Firms</h1>
         <p className="text-text-secondary mt-2">
-          {demoVCStats.length} firms tracking {demoVCStats.reduce((s, v) => s + v.company_count, 0)} companies
+          {vcStats.length} firms tracking {vcStats.reduce((s, v) => s + v.company_count, 0)} companies
         </p>
       </div>
 

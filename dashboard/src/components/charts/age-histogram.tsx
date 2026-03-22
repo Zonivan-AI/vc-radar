@@ -32,7 +32,7 @@ function CustomTooltip({ active, payload }: { active?: boolean; payload?: Array<
 
 export function AgeHistogram({ data, height = 300, showLabels = true }: AgeHistogramProps) {
   return (
-    <div>
+    <div style={{ minHeight: height }}>
       <ResponsiveContainer width="100%" height={height}>
         <BarChart data={data} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1F2937" />

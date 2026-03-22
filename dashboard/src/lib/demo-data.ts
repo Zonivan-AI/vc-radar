@@ -1,12 +1,12 @@
 // ============================================================================
-// Meridian — Demo/Seed Data for development without Supabase
+// VC Radar — Demo/Seed Data for development without Supabase
 // ============================================================================
 // This data is derived from the seed Excel file and is used when
 // NEXT_PUBLIC_SUPABASE_URL is not set.
 // ============================================================================
 
 import type {
-  VCFirm, Company, Founder, VCStats,
+  VCFirm, Company, Founder, Investment, VCStats,
   GlobalStats, SectorStat, AgeBucket,
 } from './types'
 
@@ -43,6 +43,41 @@ export const demoFounders: Founder[] = [
   { id: 'f6', company_id: 'c6', full_name: 'Jason Warner', role: 'primary', est_birth_year: 1980, domain_exp_years: 20, prior_founder: false, education_tier: 'Other', university: 'Penn State', degree: null, grad_year: null, age_at_founding: 43, current_age_2026: 46, age_confidence: 'Low', age_inference_method: 'Pattern-inference', linkedin_url: null, twitter_url: null, nationality: null, source_notes: null, created_at: '' },
   { id: 'f7', company_id: 'c7', full_name: 'Cristóbal Valenzuela', role: 'primary', est_birth_year: 1994, domain_exp_years: 3, prior_founder: false, education_tier: 'Top-50', university: 'NYU', degree: null, grad_year: null, age_at_founding: 24, current_age_2026: 32, age_confidence: 'Medium', age_inference_method: 'LinkedIn-education', linkedin_url: null, twitter_url: null, nationality: null, source_notes: null, created_at: '' },
   { id: 'f8', company_id: 'c8', full_name: 'Scott Wu', role: 'primary', est_birth_year: 1999, domain_exp_years: 2, prior_founder: false, education_tier: 'Top-10', university: 'MIT', degree: null, grad_year: null, age_at_founding: 24, current_age_2026: 27, age_confidence: 'Medium', age_inference_method: 'Public-media', linkedin_url: null, twitter_url: null, nationality: null, source_notes: null, created_at: '' },
+]
+
+export const demoInvestments: Investment[] = [
+  // NEA Capital investments
+  { id: 'inv-1', vc_id: '1', company_id: 'c1', stage: 'Seed', lead_investor: true, announced_date: '2022-06-15', source_url: null, created_at: '' },
+  { id: 'inv-2', vc_id: '1', company_id: 'c4', stage: 'Series A', lead_investor: false, announced_date: '2023-01-10', source_url: null, created_at: '' },
+  { id: 'inv-3', vc_id: '1', company_id: 'c6', stage: 'Series B', lead_investor: true, announced_date: '2024-03-20', source_url: null, created_at: '' },
+  // NFX investments
+  { id: 'inv-4', vc_id: '2', company_id: 'c1', stage: 'Seed', lead_investor: false, announced_date: '2022-06-15', source_url: null, created_at: '' },
+  { id: 'inv-5', vc_id: '2', company_id: 'c8', stage: 'Seed', lead_investor: true, announced_date: '2023-04-05', source_url: null, created_at: '' },
+  // Quiet Capital investments
+  { id: 'inv-6', vc_id: '3', company_id: 'c8', stage: 'Seed', lead_investor: false, announced_date: '2023-04-05', source_url: null, created_at: '' },
+  { id: 'inv-7', vc_id: '3', company_id: 'c7', stage: 'Series A', lead_investor: false, announced_date: '2020-11-15', source_url: null, created_at: '' },
+  // Khosla Ventures investments
+  { id: 'inv-8', vc_id: '4', company_id: 'c5', stage: 'Seed', lead_investor: true, announced_date: '2024-05-01', source_url: null, created_at: '' },
+  { id: 'inv-9', vc_id: '4', company_id: 'c4', stage: 'Series A', lead_investor: true, announced_date: '2023-01-10', source_url: null, created_at: '' },
+  { id: 'inv-10', vc_id: '4', company_id: 'c1', stage: 'Series B', lead_investor: false, announced_date: '2024-01-20', source_url: null, created_at: '' },
+  // Basis Set Ventures investments
+  { id: 'inv-11', vc_id: '5', company_id: 'c4', stage: 'Seed', lead_investor: false, announced_date: '2022-08-01', source_url: null, created_at: '' },
+  { id: 'inv-12', vc_id: '5', company_id: 'c2', stage: 'Series A', lead_investor: false, announced_date: '2023-06-15', source_url: null, created_at: '' },
+  // Matrix Partners investments
+  { id: 'inv-13', vc_id: '6', company_id: 'c2', stage: 'Series B', lead_investor: true, announced_date: '2024-01-10', source_url: null, created_at: '' },
+  { id: 'inv-14', vc_id: '6', company_id: 'c3', stage: 'Series C', lead_investor: false, announced_date: '2023-07-20', source_url: null, created_at: '' },
+  // Bain Capital Ventures investments
+  { id: 'inv-15', vc_id: '7', company_id: 'c6', stage: 'Series A', lead_investor: false, announced_date: '2023-09-15', source_url: null, created_at: '' },
+  { id: 'inv-16', vc_id: '7', company_id: 'c3', stage: 'Series D', lead_investor: true, announced_date: '2024-06-01', source_url: null, created_at: '' },
+  // Race Capital investments
+  { id: 'inv-17', vc_id: '8', company_id: 'c1', stage: 'Pre-Seed', lead_investor: false, announced_date: '2022-01-10', source_url: null, created_at: '' },
+  { id: 'inv-18', vc_id: '8', company_id: 'c7', stage: 'Seed', lead_investor: false, announced_date: '2019-05-20', source_url: null, created_at: '' },
+  // Unusual Ventures investments
+  { id: 'inv-19', vc_id: '9', company_id: 'c8', stage: 'Seed', lead_investor: false, announced_date: '2023-04-05', source_url: null, created_at: '' },
+  { id: 'inv-20', vc_id: '9', company_id: 'c5', stage: 'Seed', lead_investor: false, announced_date: '2024-05-01', source_url: null, created_at: '' },
+  // Kindred Ventures investments
+  { id: 'inv-21', vc_id: '10', company_id: 'c7', stage: 'Seed', lead_investor: true, announced_date: '2019-05-20', source_url: null, created_at: '' },
+  { id: 'inv-22', vc_id: '10', company_id: 'c2', stage: 'Seed', lead_investor: false, announced_date: '2022-10-01', source_url: null, created_at: '' },
 ]
 
 export const demoVCStats: VCStats[] = [

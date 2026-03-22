@@ -1,5 +1,5 @@
 // ============================================================================
-// Meridian — TypeScript Types (matching Supabase schema)
+// VC Radar — TypeScript Types (matching Supabase schema)
 // ============================================================================
 
 export interface VCFirm {

@@ -1,3 +1,5 @@
+'use client'
+
 import Link from 'next/link'
 import { Compass, Github, ExternalLink } from 'lucide-react'
 
@@ -12,7 +14,7 @@ export function Footer() {
               <div className="w-7 h-7 rounded-lg bg-indigo/20 flex items-center justify-center">
                 <Compass className="w-3.5 h-3.5 text-indigo-light" />
               </div>
-              <span className="text-base font-bold text-text-primary">Meridian</span>
+              <span className="text-base font-bold text-text-primary">VC Radar</span>
             </div>
             <p className="text-sm text-text-secondary leading-relaxed">
               Open-source VC intelligence for founders, researchers, and operators.

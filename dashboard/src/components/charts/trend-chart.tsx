@@ -39,6 +39,7 @@ function CustomTooltip({ active, payload, label }: {
 
 export function TrendChart({ data, sectors, height = 350 }: TrendChartProps) {
   return (
+    <div style={{ minHeight: height }}>
     <ResponsiveContainer width="100%" height={height}>
       <AreaChart data={data} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
         <defs>
@@ -80,5 +81,6 @@ export function TrendChart({ data, sectors, height = 350 }: TrendChartProps) {
         ))}
       </AreaChart>
     </ResponsiveContainer>
+    </div>
   )
 }

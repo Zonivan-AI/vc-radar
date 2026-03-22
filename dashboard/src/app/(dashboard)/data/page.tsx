@@ -102,7 +102,7 @@ export default function DataPage() {
             Contribute Data
           </h2>
           <p className="section-subtitle mb-6">
-            Meridian is open-source and community-driven. Help us grow the dataset.
+            VC Radar is open-source and community-driven. Help us grow the dataset.
           </p>
 
           <div className="space-y-4">

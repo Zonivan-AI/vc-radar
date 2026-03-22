@@ -57,6 +57,7 @@ export function FundingScatter({ founders, companies, height = 350 }: FundingSca
     })
 
   return (
+    <div style={{ minHeight: height }}>
     <ResponsiveContainer width="100%" height={height}>
       <ScatterChart margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#1F2937" />
@@ -85,5 +86,6 @@ export function FundingScatter({ founders, companies, height = 350 }: FundingSca
         </Scatter>
       </ScatterChart>
     </ResponsiveContainer>
+    </div>
   )
 }

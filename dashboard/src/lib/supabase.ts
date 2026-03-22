@@ -4,10 +4,13 @@ import type {
   VCStats, GlobalStats, SectorStat, AgeBucket,
 } from './types'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ''
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// Returns null if env vars not configured — callers fall back to demo data
+export const supabase = supabaseUrl && supabaseAnonKey
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : null as any
 
 // ============================================================================
 // VC Firms
@@ -157,6 +160,18 @@ export async function getSectorStats(): Promise<SectorStat[]> {
 export async function getAgeBuckets(): Promise<AgeBucket[]> {
   const { data, error } = await supabase
     .from('mv_age_buckets')
+    .select('*')
+  if (error) throw error
+  return data ?? []
+}
+
+// ============================================================================
+// All Investments (for graph visualization)
+// ============================================================================
+
+export async function getInvestments(): Promise<Investment[]> {
+  const { data, error } = await supabase
+    .from('investments')
     .select('*')
   if (error) throw error
   return data ?? []
