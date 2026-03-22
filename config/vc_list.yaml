@@ -1,7 +1,7 @@
 # =============================================================================
-# Meridian VC Intelligence Platform - VC Firm Registry
+# VC Radar — VC Firm Registry
 # =============================================================================
-# Master list of all 20 VC firms tracked in the platform.
+# Master list of VC firms tracked in the platform.
 # portfolio_url: URL to the firm's portfolio page (null if unknown).
 # focus_sectors: Primary investment thesis areas.
 # stage_focus: Typical investment stages.
@@ -358,6 +358,294 @@ vc_firms:
     hq_city: "Calgary"
     hq_country: "Canada"
     description: "Canadian seed AI investor; Calgary ecosystem; mid-career founders."
+
+  # --------------------------------------------------------------------------
+  # Tier 0 - Mega / Top-Tier Funds (new additions)
+  # --------------------------------------------------------------------------
+  - name: "Andreessen Horowitz"
+    slug: "a16z"
+    website: "https://a16z.com"
+    portfolio_url: "https://a16z.com/portfolio/"
+    focus_sectors:
+      - "AI/ML"
+      - "Crypto/Web3"
+      - "Enterprise"
+      - "Consumer"
+      - "Fintech"
+      - "Bio/Health"
+    stage_focus:
+      - "Seed"
+      - "Series A"
+      - "Series B"
+      - "Growth"
+    hq_region: "US-SF Bay"
+    hq_city: "Menlo Park"
+    hq_country: "USA"
+    description: "Top-tier multi-stage VC; pioneered platform model for portfolio support."
+
+  - name: "Sequoia Capital"
+    slug: "sequoia-capital"
+    website: "https://www.sequoiacap.com"
+    portfolio_url: "https://www.sequoiacap.com/companies/"
+    focus_sectors:
+      - "AI/ML"
+      - "Enterprise"
+      - "Consumer"
+      - "Healthcare"
+      - "Fintech"
+    stage_focus:
+      - "Seed"
+      - "Series A"
+      - "Series B"
+      - "Growth"
+    hq_region: "US-SF Bay"
+    hq_city: "Menlo Park"
+    hq_country: "USA"
+    description: "Legendary VC behind Apple, Google, Stripe. Now betting big on AI."
+
+  - name: "Accel"
+    slug: "accel"
+    website: "https://www.accel.com"
+    portfolio_url: "https://www.accel.com/portfolio"
+    focus_sectors:
+      - "AI/ML"
+      - "Enterprise SaaS"
+      - "Security"
+      - "Fintech"
+      - "Consumer"
+    stage_focus:
+      - "Seed"
+      - "Series A"
+      - "Series B"
+      - "Growth"
+    hq_region: "US-SF Bay"
+    hq_city: "Palo Alto"
+    hq_country: "USA"
+    description: "Global early-stage VC; early backer of Facebook, Slack, UiPath."
+
+  - name: "Benchmark"
+    slug: "benchmark"
+    website: "https://www.benchmark.com"
+    portfolio_url: null
+    focus_sectors:
+      - "AI/ML"
+      - "Consumer"
+      - "Enterprise"
+      - "Marketplace"
+    stage_focus:
+      - "Series A"
+      - "Series B"
+    hq_region: "US-SF Bay"
+    hq_city: "San Francisco"
+    hq_country: "USA"
+    description: "Equal partnership model; early eBay, Twitter, Uber backer."
+
+  - name: "Greylock Partners"
+    slug: "greylock"
+    website: "https://greylock.com"
+    portfolio_url: "https://greylock.com/portfolio/"
+    focus_sectors:
+      - "AI/ML"
+      - "Enterprise"
+      - "Consumer"
+      - "Developer Tools"
+    stage_focus:
+      - "Seed"
+      - "Series A"
+      - "Series B"
+    hq_region: "US-SF Bay"
+    hq_city: "Menlo Park"
+    hq_country: "USA"
+    description: "Early-stage VC; early LinkedIn, Discord, Figma investor."
+
+  - name: "Lightspeed Venture Partners"
+    slug: "lightspeed"
+    website: "https://lsvp.com"
+    portfolio_url: "https://lsvp.com/portfolio/"
+    focus_sectors:
+      - "AI/ML"
+      - "Enterprise"
+      - "Consumer"
+      - "Healthcare"
+      - "Fintech"
+    stage_focus:
+      - "Seed"
+      - "Series A"
+      - "Series B"
+      - "Growth"
+    hq_region: "US-SF Bay"
+    hq_city: "Menlo Park"
+    hq_country: "USA"
+    description: "Multi-stage global VC; Snap, Affirm, Epic Games backer."
+
+  - name: "Founders Fund"
+    slug: "founders-fund"
+    website: "https://foundersfund.com"
+    portfolio_url: "https://foundersfund.com/portfolio/"
+    focus_sectors:
+      - "AI/ML"
+      - "Deep Tech"
+      - "Space"
+      - "Defense"
+      - "Bio"
+    stage_focus:
+      - "Seed"
+      - "Series A"
+      - "Series B"
+      - "Growth"
+    hq_region: "US-SF Bay"
+    hq_city: "San Francisco"
+    hq_country: "USA"
+    description: "Peter Thiel's fund; contrarian thesis; SpaceX, Palantir, Anduril."
+
+  - name: "Index Ventures"
+    slug: "index-ventures"
+    website: "https://www.indexventures.com"
+    portfolio_url: "https://www.indexventures.com/portfolio/"
+    focus_sectors:
+      - "AI/ML"
+      - "Fintech"
+      - "Enterprise"
+      - "Consumer"
+      - "Gaming"
+    stage_focus:
+      - "Seed"
+      - "Series A"
+      - "Series B"
+      - "Growth"
+    hq_region: "Europe"
+    hq_city: "London"
+    hq_country: "UK"
+    description: "Transatlantic VC; Figma, Discord, Notion investor."
+
+  - name: "General Catalyst"
+    slug: "general-catalyst"
+    website: "https://www.generalcatalyst.com"
+    portfolio_url: "https://www.generalcatalyst.com/portfolio"
+    focus_sectors:
+      - "AI/ML"
+      - "Enterprise"
+      - "Healthcare"
+      - "Fintech"
+      - "Climate"
+    stage_focus:
+      - "Seed"
+      - "Series A"
+      - "Series B"
+      - "Growth"
+    hq_region: "US-Other"
+    hq_city: "Cambridge"
+    hq_country: "USA"
+    description: "Multi-stage VC; Stripe, Snap, Airbnb backer."
+
+  - name: "Coatue Management"
+    slug: "coatue"
+    website: "https://www.coatue.com"
+    portfolio_url: "https://www.coatue.com/portfolio"
+    focus_sectors:
+      - "AI/ML"
+      - "Enterprise"
+      - "Consumer"
+      - "Fintech"
+    stage_focus:
+      - "Series A"
+      - "Series B"
+      - "Growth"
+    hq_region: "US-Other"
+    hq_city: "New York"
+    hq_country: "USA"
+    description: "Crossover public/private tech investor; aggressive AI bet."
+
+  - name: "Thrive Capital"
+    slug: "thrive-capital"
+    website: "https://www.thrivecap.com"
+    portfolio_url: null
+    focus_sectors:
+      - "AI/ML"
+      - "Enterprise"
+      - "Consumer"
+      - "Media"
+    stage_focus:
+      - "Series A"
+      - "Series B"
+      - "Growth"
+    hq_region: "US-Other"
+    hq_city: "New York"
+    hq_country: "USA"
+    description: "Josh Kushner's fund; major OpenAI investor."
+
+  - name: "Felicis Ventures"
+    slug: "felicis"
+    website: "https://www.felicis.com"
+    portfolio_url: "https://www.felicis.com/portfolio"
+    focus_sectors:
+      - "AI/ML"
+      - "Enterprise"
+      - "Consumer"
+      - "Fintech"
+      - "Climate"
+    stage_focus:
+      - "Seed"
+      - "Series A"
+      - "Series B"
+    hq_region: "US-SF Bay"
+    hq_city: "Menlo Park"
+    hq_country: "USA"
+    description: "Early-stage VC; Shopify, Adyen, Credit Karma backer."
+
+  - name: "Radical Ventures"
+    slug: "radical-ventures"
+    website: "https://www.radical.vc"
+    portfolio_url: "https://www.radical.vc/portfolio"
+    focus_sectors:
+      - "AI/ML"
+      - "AI Infrastructure"
+      - "Applied AI"
+      - "Robotics"
+    stage_focus:
+      - "Seed"
+      - "Series A"
+      - "Series B"
+    hq_region: "Canada"
+    hq_city: "Toronto"
+    hq_country: "Canada"
+    description: "AI-specialist fund; Geoffrey Hinton advisor; Cohere, Waabi backer."
+
+  - name: "Wing VC"
+    slug: "wing-vc"
+    website: "https://www.wing.vc"
+    portfolio_url: "https://www.wing.vc/portfolio"
+    focus_sectors:
+      - "AI/ML"
+      - "Enterprise"
+      - "Developer Tools"
+      - "Security"
+    stage_focus:
+      - "Seed"
+      - "Series A"
+    hq_region: "US-SF Bay"
+    hq_city: "Palo Alto"
+    hq_country: "USA"
+    description: "Seed/Series A enterprise and AI investor."
+
+  - name: "Lux Capital"
+    slug: "lux-capital"
+    website: "https://www.luxcapital.com"
+    portfolio_url: "https://www.luxcapital.com/portfolio"
+    focus_sectors:
+      - "AI/ML"
+      - "Deep Tech"
+      - "Robotics"
+      - "Bio"
+      - "Space"
+    stage_focus:
+      - "Seed"
+      - "Series A"
+      - "Series B"
+    hq_region: "US-Other"
+    hq_city: "New York"
+    hq_country: "USA"
+    description: "Deep tech and frontier science VC; Anduril early backer."
 
 # =============================================================================
 # Scraping configuration

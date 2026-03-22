@@ -1,5 +1,5 @@
 -- ============================================================================
--- MERIDIAN — Database Schema for Supabase (PostgreSQL)
+-- VC RADAR — Database Schema for Supabase (PostgreSQL)
 -- ============================================================================
 -- Run this in your Supabase SQL Editor to set up the full schema.
 -- ============================================================================
