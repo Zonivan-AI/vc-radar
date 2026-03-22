@@ -1,8 +1,12 @@
 """
-Founder data enrichment using Serper API (Google search).
+Founder data enrichment using free/cheap search APIs.
 
-Searches for founders via Google, then uses the DataExtractor to parse
-search results into structured founder profiles with confidence scoring.
+Supports multiple search backends:
+  - DuckDuckGo HTML scraping (FREE, no API key, default)
+  - Serper API ($50/mo, higher quality)
+
+Then uses the DataExtractor (cheap OSS models) to parse search results
+into structured founder profiles.
 """
 
 from __future__ import annotations
@@ -10,7 +14,9 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import re
 from typing import Any
+from urllib.parse import quote_plus
 
 import httpx
 from tenacity import (
@@ -30,9 +36,166 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 SERPER_API_URL = "https://google.serper.dev/search"
-SERPER_RATE_LIMIT_SECONDS = 1.0  # Minimum delay between Serper calls
+DDG_HTML_URL = "https://html.duckduckgo.com/html/"
+RATE_LIMIT_SECONDS = 1.5  # Minimum delay between searches
 MAX_CONCURRENT_SEARCHES = 3
 MAX_SEARCH_RESULTS = 10
+
+
+# ---------------------------------------------------------------------------
+# Search backends
+# ---------------------------------------------------------------------------
+
+
+class DuckDuckGoSearch:
+    """Free search using DuckDuckGo HTML endpoint. No API key needed."""
+
+    def __init__(self) -> None:
+        self._client: httpx.AsyncClient | None = None
+
+    async def _get_client(self) -> httpx.AsyncClient:
+        if self._client is None or self._client.is_closed:
+            self._client = httpx.AsyncClient(
+                timeout=httpx.Timeout(20.0),
+                headers={
+                    "User-Agent": (
+                        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                        "AppleWebKit/537.36 (KHTML, like Gecko) "
+                        "Chrome/122.0.0.0 Safari/537.36"
+                    ),
+                },
+                follow_redirects=True,
+            )
+        return self._client
+
+    async def close(self) -> None:
+        if self._client and not self._client.is_closed:
+            await self._client.aclose()
+            self._client = None
+
+    @retry(
+        retry=retry_if_exception_type((httpx.ConnectError, httpx.ReadTimeout)),
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+        reraise=True,
+    )
+    async def search(self, query: str) -> list[str]:
+        """Search DuckDuckGo and return text snippets."""
+        client = await self._get_client()
+
+        response = await client.post(
+            DDG_HTML_URL,
+            data={"q": query, "b": ""},
+        )
+        response.raise_for_status()
+        html = response.text
+
+        return self._extract_snippets(html)
+
+    def _extract_snippets(self, html: str) -> list[str]:
+        """Extract result snippets from DuckDuckGo HTML response."""
+        snippets: list[str] = []
+
+        # Extract result blocks: <a class="result__a" href="...">title</a>
+        # and <a class="result__snippet">snippet text</a>
+        titles = re.findall(
+            r'class="result__a"[^>]*>([^<]+)</a>', html
+        )
+        snippet_texts = re.findall(
+            r'class="result__snippet"[^>]*>(.*?)</(?:a|span)>',
+            html,
+            re.DOTALL,
+        )
+        urls = re.findall(
+            r'class="result__url"[^>]*href="([^"]*)"',
+            html,
+        )
+
+        for i, title in enumerate(titles[:MAX_SEARCH_RESULTS]):
+            parts = [title.strip()]
+            if i < len(snippet_texts):
+                # Clean HTML tags from snippet
+                snippet = re.sub(r"<[^>]+>", "", snippet_texts[i]).strip()
+                parts.append(snippet)
+            if i < len(urls):
+                parts.append(f"URL: {urls[i]}")
+            snippets.append("\n".join(parts))
+
+        return snippets
+
+
+class SerperSearch:
+    """Google search via Serper API ($50/mo for 50k queries)."""
+
+    def __init__(self, api_key: str) -> None:
+        self._api_key = api_key
+        self._client: httpx.AsyncClient | None = None
+
+    async def _get_client(self) -> httpx.AsyncClient:
+        if self._client is None or self._client.is_closed:
+            self._client = httpx.AsyncClient(
+                timeout=httpx.Timeout(30.0),
+                headers={
+                    "X-API-KEY": self._api_key,
+                    "Content-Type": "application/json",
+                },
+            )
+        return self._client
+
+    async def close(self) -> None:
+        if self._client and not self._client.is_closed:
+            await self._client.aclose()
+            self._client = None
+
+    @retry(
+        retry=retry_if_exception_type((httpx.HTTPStatusError, httpx.ConnectError)),
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=15),
+        reraise=True,
+    )
+    async def search(self, query: str) -> list[str]:
+        """Search Google via Serper API."""
+        client = await self._get_client()
+        response = await client.post(
+            SERPER_API_URL,
+            json={"q": query, "num": MAX_SEARCH_RESULTS},
+        )
+        response.raise_for_status()
+        return self._extract_snippets(response.json())
+
+    def _extract_snippets(self, data: dict) -> list[str]:
+        """Extract text snippets from Serper response."""
+        snippets: list[str] = []
+
+        # Knowledge graph
+        kg = data.get("knowledgeGraph", {})
+        if kg:
+            parts = []
+            if kg.get("title"):
+                parts.append(f"Title: {kg['title']}")
+            if kg.get("description"):
+                parts.append(f"Description: {kg['description']}")
+            for k, v in kg.get("attributes", {}).items():
+                parts.append(f"{k}: {v}")
+            if parts:
+                snippets.append("\n".join(parts))
+
+        # Answer box
+        answer = data.get("answerBox", {})
+        if answer:
+            snippets.append(f"Answer: {answer.get('snippet') or answer.get('answer', '')}")
+
+        # Organic results
+        for r in data.get("organic", []):
+            parts = [r["title"]] if r.get("title") else []
+            if r.get("snippet"):
+                parts.append(r["snippet"])
+            if r.get("link"):
+                parts.append(f"URL: {r['link']}")
+            if parts:
+                snippets.append("\n".join(parts))
+
+        return snippets
 
 
 # ---------------------------------------------------------------------------
@@ -43,20 +206,13 @@ MAX_SEARCH_RESULTS = 10
 class FounderEnricher:
     """Enriches portfolio company data with founder biographical details.
 
-    Uses the Serper API to search Google for founder information, then passes
-    the search results through the DataExtractor (Claude) for structured
-    extraction.
+    Uses free DuckDuckGo search by default, with Serper as optional upgrade.
+    Search results are processed by cheap OSS models via DataExtractor.
 
-    Usage::
-
-        extractor = DataExtractor(api_key="sk-ant-...")
-        enricher = FounderEnricher(serper_key="...", extractor=extractor)
-
-        enriched = await enricher.enrich_company({
-            "name": "Acme Corp",
-            "founded_year": 2021,
-            "founders": [{"full_name": "Jane Doe", "role": "primary"}],
-        })
+    Cost breakdown per founder:
+      - DuckDuckGo + Llama 3.3:  ~$0.001 (basically free)
+      - Serper + Llama 3.3:      ~$0.002 (Serper costs $0.001/query)
+      - Serper + Claude Sonnet:  ~$0.15  (150x more expensive)
     """
 
     def __init__(
@@ -64,64 +220,34 @@ class FounderEnricher:
         serper_key: str | None = None,
         extractor: DataExtractor | None = None,
     ) -> None:
-        resolved_key = serper_key or os.environ.get("SERPER_API_KEY")
-        if not resolved_key:
-            raise ValueError(
-                "Serper API key required. Pass serper_key or set SERPER_API_KEY."
-            )
-        self._serper_key = resolved_key
+        resolved_key = serper_key or os.environ.get("SERPER_API_KEY", "")
+
+        # Choose search backend: Serper if key provided, else free DDG
+        if resolved_key:
+            self._search_backend = SerperSearch(resolved_key)
+            self._search_name = "Serper"
+            logger.info("FounderEnricher using Serper (paid) search")
+        else:
+            self._search_backend = DuckDuckGoSearch()
+            self._search_name = "DuckDuckGo"
+            logger.info("FounderEnricher using DuckDuckGo (free) search")
+
         self._extractor = extractor
         self._validator = DataValidator()
-        self._http_client: httpx.AsyncClient | None = None
         self._semaphore = asyncio.Semaphore(MAX_CONCURRENT_SEARCHES)
         self._search_count = 0
-        logger.info("FounderEnricher initialized")
-
-    async def _get_client(self) -> httpx.AsyncClient:
-        """Lazily create the async HTTP client."""
-        if self._http_client is None or self._http_client.is_closed:
-            self._http_client = httpx.AsyncClient(
-                timeout=httpx.Timeout(30.0),
-                headers={
-                    "X-API-KEY": self._serper_key,
-                    "Content-Type": "application/json",
-                },
-            )
-        return self._http_client
 
     async def close(self) -> None:
-        """Close the HTTP client."""
-        if self._http_client and not self._http_client.is_closed:
-            await self._http_client.aclose()
-            self._http_client = None
+        """Close HTTP clients."""
+        await self._search_backend.close()
 
     # -- Search --------------------------------------------------------------
 
-    @retry(
-        retry=retry_if_exception_type((httpx.HTTPStatusError, httpx.ConnectError)),
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=2, max=15),
-        reraise=True,
-    )
     async def search_founder(
         self, founder_name: str, company_name: str
     ) -> str:
-        """Search Google via Serper API for information about a founder.
-
-        Constructs targeted search queries to find biographical details,
-        LinkedIn profiles, education, and prior experience.
-
-        Args:
-            founder_name: Full name of the founder.
-            company_name: Name of the founder's company.
-
-        Returns:
-            Concatenated text snippets from search results.
-        """
+        """Search for founder info using the configured backend."""
         async with self._semaphore:
-            client = await self._get_client()
-
-            # Build targeted queries
             queries = [
                 f'"{founder_name}" "{company_name}" founder CEO LinkedIn',
                 f'"{founder_name}" education university founder',
@@ -130,29 +256,22 @@ class FounderEnricher:
             all_snippets: list[str] = []
 
             for query in queries:
-                logger.debug("Serper search: %s", query)
+                try:
+                    snippets = await self._search_backend.search(query)
+                    all_snippets.extend(snippets)
+                    self._search_count += 1
+                except Exception as exc:
+                    logger.warning(
+                        "%s search failed for query %r: %s",
+                        self._search_name, query, exc,
+                    )
 
-                response = await client.post(
-                    SERPER_API_URL,
-                    json={
-                        "q": query,
-                        "num": MAX_SEARCH_RESULTS,
-                    },
-                )
-                response.raise_for_status()
-
-                data = response.json()
-                snippets = self._extract_snippets(data)
-                all_snippets.extend(snippets)
-
-                self._search_count += 1
-
-                # Rate limiting between searches
-                await asyncio.sleep(SERPER_RATE_LIMIT_SECONDS)
+                await asyncio.sleep(RATE_LIMIT_SECONDS)
 
             combined = "\n\n---\n\n".join(all_snippets)
             logger.info(
-                "Search for %r @ %r returned %d snippet(s), %d chars",
+                "[%s] %r @ %r: %d snippets, %d chars",
+                self._search_name,
                 founder_name,
                 company_name,
                 len(all_snippets),
@@ -160,73 +279,15 @@ class FounderEnricher:
             )
             return combined
 
-    def _extract_snippets(self, serper_response: dict) -> list[str]:
-        """Extract text snippets from a Serper API response.
-
-        Pulls from organic results, knowledge graph, and answer boxes.
-        """
-        snippets: list[str] = []
-
-        # Knowledge graph
-        kg = serper_response.get("knowledgeGraph", {})
-        if kg:
-            parts = []
-            if kg.get("title"):
-                parts.append(f"Title: {kg['title']}")
-            if kg.get("description"):
-                parts.append(f"Description: {kg['description']}")
-            for attr_key, attr_val in kg.get("attributes", {}).items():
-                parts.append(f"{attr_key}: {attr_val}")
-            if parts:
-                snippets.append("\n".join(parts))
-
-        # Answer box
-        answer = serper_response.get("answerBox", {})
-        if answer:
-            if answer.get("snippet"):
-                snippets.append(f"Answer: {answer['snippet']}")
-            elif answer.get("answer"):
-                snippets.append(f"Answer: {answer['answer']}")
-
-        # Organic results
-        for result in serper_response.get("organic", []):
-            parts = []
-            if result.get("title"):
-                parts.append(result["title"])
-            if result.get("snippet"):
-                parts.append(result["snippet"])
-            if result.get("link"):
-                parts.append(f"URL: {result['link']}")
-            if parts:
-                snippets.append("\n".join(parts))
-
-        # People also ask
-        for paa in serper_response.get("peopleAlsoAsk", []):
-            if paa.get("snippet"):
-                snippets.append(f"Q: {paa.get('question', '')}\nA: {paa['snippet']}")
-
-        return snippets
-
     # -- Enrichment ----------------------------------------------------------
 
     async def enrich_company(self, company: dict) -> dict:
-        """Enrich a single company dict with detailed founder data.
-
-        For each founder listed in the company, searches Google and uses
-        Claude to extract structured biographical data.
-
-        Args:
-            company: Company dict with at least 'name' and 'founders' keys.
-
-        Returns:
-            The company dict with enriched founder data.
-        """
+        """Enrich a single company with detailed founder data."""
         company_name = company.get("name", "Unknown")
         founded_year = company.get("founded_year")
         founders_raw = company.get("founders", [])
 
         if not founders_raw:
-            logger.info("Company %r has no founders to enrich", company_name)
             return company
 
         enriched_founders: list[dict] = []
@@ -234,7 +295,6 @@ class FounderEnricher:
         for founder_raw in founders_raw:
             founder_name = founder_raw.get("full_name", "")
             if not founder_name:
-                logger.warning("Skipping founder with no name for company %r", company_name)
                 enriched_founders.append(founder_raw)
                 continue
 
@@ -248,12 +308,9 @@ class FounderEnricher:
                 enriched_founders.append(enriched)
             except Exception as exc:
                 logger.error(
-                    "Failed to enrich founder %r for %r: %s",
-                    founder_name,
-                    company_name,
-                    exc,
+                    "Failed to enrich %r for %r: %s",
+                    founder_name, company_name, exc,
                 )
-                # Keep original data on failure
                 enriched_founders.append(founder_raw)
 
         company["founders"] = enriched_founders
@@ -266,31 +323,14 @@ class FounderEnricher:
         company_name: str,
         founded_year: int | None,
     ) -> dict:
-        """Enrich a single founder with search + extraction.
-
-        Args:
-            founder_name: The founder's full name.
-            founder_raw: Original founder dict from portfolio extraction.
-            company_name: The company name for search context.
-            founded_year: The company's founding year.
-
-        Returns:
-            Merged founder dict with enriched fields.
-        """
-        # Search for founder information
+        """Enrich a single founder with search + LLM extraction."""
         search_text = await self.search_founder(founder_name, company_name)
 
         if not search_text.strip():
-            logger.warning(
-                "No search results for founder %r @ %r",
-                founder_name,
-                company_name,
-            )
+            logger.warning("No search results for %r @ %r", founder_name, company_name)
             return founder_raw
 
-        # Use Claude to extract structured data from search results
         if self._extractor is None:
-            logger.warning("No DataExtractor configured; returning raw founder data")
             return founder_raw
 
         extracted = await self._extractor.extract_founder_info(
@@ -299,10 +339,13 @@ class FounderEnricher:
             founded_year=founded_year,
         )
 
-        # Merge: extracted data fills in blanks, original data takes precedence
-        merged = self._merge_founder_data(original=founder_raw, extracted=extracted)
+        # Merge: original non-null values take precedence
+        merged = dict(extracted)
+        for key, value in founder_raw.items():
+            if value is not None and value != "":
+                merged[key] = value
 
-        # Compute age_at_founding if we have the data
+        # Compute age_at_founding
         if merged.get("est_birth_year") and founded_year:
             merged["age_at_founding"] = founded_year - merged["est_birth_year"]
 
@@ -310,73 +353,34 @@ class FounderEnricher:
         validated, warnings = self._validator.validate_founder(merged)
         if validated:
             merged["age_confidence"] = validated.age_confidence
-            if warnings:
-                logger.info(
-                    "Founder %r enriched with warnings: %s", founder_name, warnings
-                )
 
         logger.info(
-            "Enriched founder %r: birth_year=%s, confidence=%s",
+            "Enriched %r: birth_year=%s, confidence=%s",
             founder_name,
             merged.get("est_birth_year"),
             merged.get("age_confidence", "Low"),
         )
         return merged
 
-    def _merge_founder_data(self, original: dict, extracted: dict) -> dict:
-        """Merge extracted founder data into original, preferring original non-null values.
-
-        Args:
-            original: Founder dict from portfolio extraction.
-            extracted: Founder dict from search result extraction.
-
-        Returns:
-            Merged dict.
-        """
-        merged = dict(extracted)
-        for key, value in original.items():
-            if value is not None and value != "":
-                merged[key] = value
-        return merged
-
-    # -- Batch enrichment ----------------------------------------------------
-
     async def enrich_batch(self, companies: list[dict]) -> list[dict]:
-        """Enrich a batch of companies with founder data.
-
-        Processes companies sequentially (founder searches run with bounded
-        concurrency internally).
-
-        Args:
-            companies: List of company dicts.
-
-        Returns:
-            List of enriched company dicts.
-        """
+        """Enrich a batch of companies sequentially."""
         enriched: list[dict] = []
 
         for i, company in enumerate(companies):
             logger.info(
-                "Enriching company %d/%d: %s",
-                i + 1,
-                len(companies),
-                company.get("name", "Unknown"),
+                "Enriching %d/%d: %s",
+                i + 1, len(companies), company.get("name", "Unknown"),
             )
             try:
                 result = await self.enrich_company(company)
                 enriched.append(result)
             except Exception as exc:
-                logger.error(
-                    "Failed to enrich company %r: %s",
-                    company.get("name"),
-                    exc,
-                )
+                logger.error("Failed to enrich %r: %s", company.get("name"), exc)
                 enriched.append(company)
 
-        logger.info("Batch enrichment complete: %d companies processed", len(enriched))
+        logger.info("Batch enrichment complete: %d companies", len(enriched))
         return enriched
 
     @property
     def search_count(self) -> int:
-        """Total number of Serper API searches performed."""
         return self._search_count
