@@ -1,5 +1,5 @@
 """
-Pipeline orchestrator that runs the full Meridian data pipeline end-to-end.
+Pipeline orchestrator that runs the full VC Radar data pipeline end-to-end.
 
 Coordinates scraping, extraction, enrichment, validation, and database
 persistence for VC portfolio data. Supports full runs, partial runs for
@@ -151,7 +151,7 @@ class PipelineStats:
 
 
 class PipelineScheduler:
-    """Orchestrates the full Meridian VC data pipeline.
+    """Orchestrates the full VC Radar data pipeline.
 
     Pipeline stages:
         1. Scrape  - Playwright fetches JS-rendered portfolio pages
@@ -173,7 +173,7 @@ class PipelineScheduler:
         # Load VC configurations
         self._vc_configs = _load_vc_configs()
 
-        # Initialize components
+        # Initialize components (extractor no longer requires api_key positional arg)
         self._scraper = VCScraper()
         self._extractor = DataExtractor()
         self._enricher = FounderEnricher(extractor=self._extractor)
@@ -252,6 +252,7 @@ class PipelineScheduler:
         finally:
             await self._scraper.close()
             await self._enricher.close()
+            await self._extractor.close()
 
         # Summary
         success = sum(1 for r in results if r.get("status") == STATUS_COMPLETED)
@@ -743,7 +744,7 @@ class PipelineScheduler:
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     """Parse command-line arguments for the pipeline."""
     parser = argparse.ArgumentParser(
-        description="Meridian VC Intelligence Pipeline",
+        description="VC Radar Intelligence Pipeline",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""\
 Examples:
