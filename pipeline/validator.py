@@ -131,8 +131,17 @@ class Founder(BaseModel):
     @field_validator("role")
     @classmethod
     def validate_role(cls, v: str) -> str:
-        if v not in VALID_ROLES:
-            raise ValueError(f"role must be one of {VALID_ROLES}, got {v!r}")
+        # Normalize: lowercase, strip extra titles like "& CEO", "& CTO"
+        normalized = v.lower().strip()
+        normalized = re.sub(r"\s*&\s*(ceo|cto|coo|cfo|president|chairman|director).*", "", normalized)
+        normalized = normalized.strip()
+        if normalized in VALID_ROLES:
+            return normalized
+        # Map common variants
+        role_map = {"founder": "primary", "cofounder": "co-founder", "co founder": "co-founder"}
+        if normalized in role_map:
+            return role_map[normalized]
+        raise ValueError(f"role must be one of {VALID_ROLES}, got {v!r}")
         return v
 
     @field_validator("education_tier")
@@ -244,8 +253,34 @@ class Company(BaseModel):
     @field_validator("status")
     @classmethod
     def validate_status(cls, v: str) -> str:
-        if v not in VALID_STATUSES:
-            raise ValueError(f"status must be one of {VALID_STATUSES}, got {v!r}")
+        if v in VALID_STATUSES:
+            return v
+        # Normalize common LLM variants
+        status_map = {
+            "acquired by": "Acquired",
+            "acquired": "Acquired",
+            "merged": "Acquired",
+            "ipo": "IPO",
+            "dpo": "IPO",
+            "spac": "IPO",
+            "public": "IPO",
+            "listed": "IPO",
+            "active": "Active",
+            "operating": "Active",
+            "private": "Active",
+            "shutdown": "Shutdown",
+            "closed": "Shutdown",
+            "defunct": "Shutdown",
+            "dead": "Shutdown",
+            "unknown": "Unknown",
+        }
+        normalized = status_map.get(v.lower().strip())
+        if normalized:
+            return normalized
+        # If status contains "acquired", treat as Acquired
+        if "acqui" in v.lower():
+            return "Acquired"
+        raise ValueError(f"status must be one of {VALID_STATUSES}, got {v!r}")
         return v
 
     @field_validator("data_quality")

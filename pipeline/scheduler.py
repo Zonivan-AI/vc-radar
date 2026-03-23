@@ -319,9 +319,57 @@ class PipelineScheduler:
                     "stats": stats.to_dict(),
                 }
 
+            # Filter out non-dict entries (some models return strings instead of objects)
+            companies_raw = [
+                c if isinstance(c, dict) else {"name": str(c)}
+                for c in companies_raw
+                if c  # skip None/empty
+            ]
+
+            # Normalize field names (local LLMs sometimes use different keys)
+            field_aliases = {
+                "company_name": "name",
+                "company": "name",
+                "title": "name",
+                "industry": "sector",
+                "category": "sector",
+                "url": "website",
+                "homepage": "website",
+                "site": "website",
+                "desc": "description",
+                "summary": "description",
+                "about": "description",
+            }
+            for comp in companies_raw:
+                if isinstance(comp, dict):
+                    for alias, canonical in field_aliases.items():
+                        if alias in comp and canonical not in comp:
+                            comp[canonical] = comp.pop(alias)
+                    # Normalize founders: convert string entries to dicts
+                    if "founders" in comp and isinstance(comp["founders"], list):
+                        normalized = []
+                        for f in comp["founders"]:
+                            if isinstance(f, str):
+                                normalized.append({"full_name": f})
+                            elif isinstance(f, dict):
+                                # Normalize founder field names to match Founder model
+                                for alias in ("name", "founder_name", "founder"):
+                                    if alias in f and "full_name" not in f:
+                                        f["full_name"] = f.pop(alias)
+                                normalized.append(f)
+                        comp["founders"] = normalized
+
             # Stage 3: Enrich
             logger.info("[3/5] Enriching %d companies with founder data", len(companies_raw))
             companies_enriched = await self._enricher.enrich_batch(companies_raw)
+
+            # Stage 3.5: Auto-generate missing slugs from company names
+            for comp in companies_enriched:
+                if not comp.get("slug") and comp.get("name"):
+                    comp["slug"] = re.sub(
+                        r"-+", "-",
+                        re.sub(r"[^a-z0-9]+", "-", comp["name"].lower()).strip("-"),
+                    )
 
             # Stage 4: Validate
             logger.info("[4/5] Validating %d companies", len(companies_enriched))

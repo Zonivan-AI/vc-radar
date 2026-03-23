@@ -25,6 +25,8 @@ from typing import Any
 
 import httpx
 import yaml
+from bs4 import BeautifulSoup
+from markdownify import markdownify as md
 from tenacity import (
     retry,
     retry_if_exception_type,
@@ -45,6 +47,9 @@ MAX_OUTPUT_TOKENS = 8192
 # OpenRouter API
 OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
 
+# Local LM Studio API
+LMSTUDIO_API_URL = os.environ.get("LMSTUDIO_API_URL", "http://192.168.1.4:1234/v1/chat/completions")
+
 
 class ModelTier(Enum):
     """Model tiers ordered by cost (cheapest first)."""
@@ -56,6 +61,25 @@ class ModelTier(Enum):
 
 # Model registry: (provider, model_id, input_cost_per_M, output_cost_per_M)
 MODEL_REGISTRY = {
+    # --- Local (free, runs on LM Studio) ---
+    "local/gemma-3-12b": {
+        "provider": "local",
+        "model_id": "google/gemma-3-12b",
+        "tier": ModelTier.FREE,
+        "input_cost": 0.0,
+        "output_cost": 0.0,
+        "max_context": 131_072,
+        "notes": "Gemma 3 12B — local via LM Studio, free, no reasoning overhead, 131K context",
+    },
+    "local/qwen2.5-coder-14b": {
+        "provider": "local",
+        "model_id": "qwen/qwen2.5-coder-14b",
+        "tier": ModelTier.FREE,
+        "input_cost": 0.0,
+        "output_cost": 0.0,
+        "max_context": 32_768,
+        "notes": "Qwen 2.5 Coder 14B — local via LM Studio, free, no reasoning overhead",
+    },
     # --- Free ---
     "openrouter/free": {
         "provider": "openrouter",
@@ -126,10 +150,11 @@ MODEL_REGISTRY = {
 }
 
 # Default model selections by task
+# Strategy: all local — free, runs on LM Studio, no API costs
 DEFAULT_MODELS = {
-    "portfolio_extraction": "deepseek/deepseek-chat",     # HTML → companies JSON
-    "founder_extraction": "meta-llama/llama-3.3-70b-instruct",  # search text → founder JSON
-    "fallback": "anthropic/claude-haiku",                  # if cheap model fails
+    "portfolio_extraction": "local/gemma-3-12b",           # HTML → companies JSON (free, local, ~2min)
+    "founder_extraction": "local/gemma-3-12b",             # search text → founder JSON (free, local, ~90s)
+    "fallback": "deepseek/deepseek-chat",                  # if local model fails, use cheap cloud
 }
 
 
@@ -285,12 +310,59 @@ class LLMClient:
         provider = model_info["provider"]
         model_id = model_info["model_id"]
 
-        if provider == "openrouter":
+        if provider == "local":
+            return await self._call_local(model_id, system_prompt, user_prompt, max_tokens)
+        elif provider == "openrouter":
             return await self._call_openrouter(model_id, system_prompt, user_prompt, max_tokens)
         elif provider == "anthropic":
             return await self._call_anthropic(model_id, system_prompt, user_prompt, max_tokens)
         else:
             raise ValueError(f"Unknown provider: {provider}")
+
+    async def _call_local(
+        self, model_id: str, system: str, user: str, max_tokens: int
+    ) -> tuple[str, int, int]:
+        """Call local LM Studio's OpenAI-compatible API (free).
+
+        Uses sync httpx in a thread executor to avoid asyncio event loop
+        conflicts with Playwright's browser keepalive connections.
+        """
+        import asyncio
+        import concurrent.futures
+
+        def _sync_call() -> dict:
+            response = httpx.post(
+                LMSTUDIO_API_URL,
+                headers={"Content-Type": "application/json"},
+                json={
+                    "model": model_id,
+                    "max_tokens": max_tokens,
+                    "temperature": 0.0,
+                    "messages": [
+                        {"role": "system", "content": system},
+                        {"role": "user", "content": user},
+                    ],
+                },
+                timeout=600.0,  # 10 min — local models are slow but free
+            )
+            response.raise_for_status()
+            return response.json()
+
+        loop = asyncio.get_event_loop()
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+            data = await loop.run_in_executor(pool, _sync_call)
+
+        text = data["choices"][0]["message"].get("content", "")
+        # GLM reasoning models wrap output in <|begin_of_box|>...<|end_of_box|> tags
+        if "<|begin_of_box|>" in text:
+            text = text.split("<|begin_of_box|>", 1)[1]
+            text = text.split("<|end_of_box|>", 1)[0]
+        # Strip markdown code fences (common with Qwen coder models)
+        text = re.sub(r"^```(?:json)?\s*\n?", "", text.strip())
+        text = re.sub(r"\n?```\s*$", "", text)
+        text = text.strip()
+        usage = data.get("usage", {})
+        return text, usage.get("prompt_tokens", 0), usage.get("completion_tokens", 0)
 
     async def _call_openrouter(
         self, model_id: str, system: str, user: str, max_tokens: int
@@ -418,7 +490,13 @@ class DataExtractor:
         source_url: str = "",
     ) -> list[dict]:
         """Extract portfolio companies from raw HTML."""
-        truncated_html = self._truncate_html(html)
+        # Limit markdown to fit in model's context window
+        # After markdown conversion, ~1.2 chars/token; reserve 4K tokens for prompt + output
+        model_info = MODEL_REGISTRY.get(self._portfolio_model, {})
+        max_ctx = model_info.get("max_context", 128_000)
+        # Conservative: assume ~1.2 chars per token for markdown text
+        html_char_limit = min(MAX_HTML_CHARS, int((max_ctx - 4000) * 1.2))
+        truncated_html = self._truncate_html(html, max_chars=html_char_limit)
 
         prompt_template = self._prompts.get(
             "portfolio_extraction", {}
@@ -516,36 +594,71 @@ class DataExtractor:
 
     # -- HTML preprocessing (aggressive cost reduction) ----------------------
 
-    def _truncate_html(self, html: str) -> str:
-        """Aggressively strip HTML to minimize tokens sent to LLM.
+    def _truncate_html(self, html: str, max_chars: int = MAX_HTML_CHARS) -> str:
+        """Convert HTML to clean Markdown for minimal token usage.
 
-        This is the #1 cost lever — reducing 500KB of HTML to ~50KB of
-        meaningful text cuts token costs by 10x.
+        This is the #1 cost lever — converting 500KB HTML to ~2-10KB Markdown
+        preserves ALL company data while cutting tokens by 50-350x.
+        Falls back to regex stripping if markdownify/bs4 fail.
         """
-        # Remove script, style, noscript, svg, path blocks
+        try:
+            return self._html_to_markdown(html, max_chars)
+        except Exception as exc:
+            logger.warning("Markdown conversion failed (%s), falling back to regex", exc)
+            return self._regex_strip_html(html, max_chars)
+
+    def _html_to_markdown(self, html: str, max_chars: int) -> str:
+        """Convert HTML to clean Markdown using BeautifulSoup + markdownify."""
+        soup = BeautifulSoup(html, "html.parser")
+
+        # Remove non-content tags
+        for tag in soup.find_all(
+            ["script", "style", "noscript", "svg", "head", "footer",
+             "nav", "iframe", "form", "button", "input", "select"]
+        ):
+            tag.decompose()
+
+        # Remove images, video, audio (we only want text data)
+        for tag in soup.find_all(["img", "figure", "picture", "video", "audio", "canvas"]):
+            tag.decompose()
+
+        # Convert to markdown
+        markdown = md(
+            str(soup),
+            strip=["img", "figure", "picture", "video", "audio", "canvas"],
+        )
+
+        # Clean up excessive whitespace
+        markdown = re.sub(r"\n{3,}", "\n\n", markdown)
+        markdown = re.sub(r" {2,}", " ", markdown)
+        markdown = markdown.strip()
+
+        # Safety truncation (should rarely trigger with markdown)
+        if len(markdown) > max_chars:
+            logger.warning(
+                "Markdown still large (%d chars), truncating to %d",
+                len(markdown), max_chars,
+            )
+            markdown = markdown[:max_chars]
+
+        return markdown
+
+    def _regex_strip_html(self, html: str, max_chars: int) -> str:
+        """Fallback: regex-based HTML stripping if markdown conversion fails."""
         cleaned = re.sub(
             r"<(script|style|noscript|svg|path|meta|link|head)[^>]*>.*?</\1>",
-            "",
-            html,
-            flags=re.DOTALL | re.IGNORECASE,
+            "", html, flags=re.DOTALL | re.IGNORECASE,
         )
-        # Remove HTML comments
         cleaned = re.sub(r"<!--.*?-->", "", cleaned, flags=re.DOTALL)
-        # Remove data-* attributes (often huge base64 images)
         cleaned = re.sub(r'\s+data-[a-z-]+="[^"]*"', "", cleaned)
-        # Remove class attributes (CSS noise)
         cleaned = re.sub(r'\s+class="[^"]*"', "", cleaned)
-        # Remove style attributes
         cleaned = re.sub(r'\s+style="[^"]*"', "", cleaned)
-        # Remove empty tags
         cleaned = re.sub(r"<\w+[^>]*>\s*</\w+>", "", cleaned)
-        # Collapse whitespace
         cleaned = re.sub(r"\s+", " ", cleaned)
-        # Remove empty lines
         cleaned = re.sub(r"\n\s*\n", "\n", cleaned)
 
-        if len(cleaned) > MAX_HTML_CHARS:
-            cleaned = cleaned[:MAX_HTML_CHARS]
+        if len(cleaned) > max_chars:
+            cleaned = cleaned[:max_chars]
 
         return cleaned.strip()
 
