@@ -41,8 +41,14 @@ portfolio_extraction:
       "description": "One-line description or null",
       "city": "HQ city or null",
       "country": "HQ country or null",
-      "founded_year": 2023 or null
+      "founded_year": 2023 or null,
+      "founders": ["Founder Name 1", "Founder Name 2"] or null
     }}
+
+    IMPORTANT: Many portfolio pages display founder names next to company entries
+    (e.g., "Founded by X and Y", "CEO: John Smith"). If you see founder names
+    in the HTML, include them in the "founders" array. This saves a separate
+    search+LLM cycle per founder. Only include names you actually see in the HTML.
 
     HTML Content:
     ```

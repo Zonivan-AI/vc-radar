@@ -47,8 +47,20 @@ MAX_OUTPUT_TOKENS = 8192
 # OpenRouter API
 OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
 
-# Local LM Studio API
+# Local LM Studio API (also works with vllm-mlx or any OpenAI-compatible server)
+# To use vllm-mlx instead of LM Studio:
+#   pip install vllm-mlx   (requires Apple Silicon M1+; may have compatibility issues on older chips)
+#   vllm serve mlx-community/Qwen2.5-14B-Instruct-4bit --port 1234
+#   Then set LMSTUDIO_API_URL=http://localhost:1234/v1/chat/completions
+# vllm-mlx uses Apple's MLX framework for Metal-accelerated inference.
+# It exposes the same OpenAI-compatible API, so _call_local() works unchanged.
+# Note: as of 2025-05, vllm-mlx is experimental and may not support all models.
 LMSTUDIO_API_URL = os.environ.get("LMSTUDIO_API_URL", "http://192.168.1.4:1234/v1/chat/completions")
+
+# DeepSeek cloud enrichment via OpenRouter (optional, toggled by env var)
+# Set USE_CLOUD_ENRICHMENT=true to use DeepSeek for founder extraction instead of local model.
+# This is faster but costs ~$0.001/founder. Useful when LM Studio is overloaded or unavailable.
+USE_CLOUD_ENRICHMENT = os.environ.get("USE_CLOUD_ENRICHMENT", "").lower() in ("true", "1", "yes")
 
 
 class ModelTier(Enum):
@@ -151,9 +163,13 @@ MODEL_REGISTRY = {
 
 # Default model selections by task
 # Strategy: all local — free, runs on LM Studio, no API costs
+# Set USE_CLOUD_ENRICHMENT=true to use DeepSeek cloud for founder extraction (faster, ~$0.001/founder)
 DEFAULT_MODELS = {
     "portfolio_extraction": "local/gemma-3-12b",           # HTML → companies JSON (free, local, ~2min)
-    "founder_extraction": "local/gemma-3-12b",             # search text → founder JSON (free, local, ~90s)
+    "founder_extraction": (
+        "deepseek/deepseek-chat" if USE_CLOUD_ENRICHMENT
+        else "local/gemma-3-12b"                           # search text → founder JSON (free, local, ~90s)
+    ),
     "fallback": "deepseek/deepseek-chat",                  # if local model fails, use cheap cloud
 }
 

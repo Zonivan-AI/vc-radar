@@ -359,39 +359,80 @@ class PipelineScheduler:
                                 normalized.append(f)
                         comp["founders"] = normalized
 
-            # Stage 3: Enrich
-            logger.info("[3/5] Enriching %d companies with founder data", len(companies_raw))
-            companies_enriched = await self._enricher.enrich_batch(companies_raw)
+            # Stage 3-5: Process each company granularly (validate → save → discover founders → save founders)
+            logger.info("[3-5] Processing %d companies granularly (save as we go)", len(companies_raw))
 
-            # Stage 3.5: Auto-generate missing slugs from company names
-            for comp in companies_enriched:
+            vc_db_id = await self._upsert_vc_firm(vc_config)
+            total_added = 0
+            total_updated = 0
+            total_founders = 0
+
+            for i, comp in enumerate(companies_raw):
+                comp_name = comp.get("name", "Unknown")
+
+                # 3a: Clean name + generate slug
+                if comp.get("name"):
+                    comp["name"] = re.sub(r"[*#@!&^%$]+$", "", comp["name"]).strip()
                 if not comp.get("slug") and comp.get("name"):
-                    comp["slug"] = re.sub(
-                        r"-+", "-",
-                        re.sub(r"[^a-z0-9]+", "-", comp["name"].lower()).strip("-"),
-                    )
+                    comp["slug"] = _generate_slug(comp["name"])
 
-            # Stage 4: Validate
-            logger.info("[4/5] Validating %d companies", len(companies_enriched))
-            validated, rejected = self._validator.validate_batch(companies_enriched)
+                # 3b: Validate
+                validated_company, warnings = self._validator.validate_company(comp)
+                if validated_company is None:
+                    stats.record_error("validation", str(warnings), context=comp_name)
+                    continue
 
-            if rejected:
-                for rej in rejected:
-                    stats.record_error(
-                        "validation",
-                        str(rej.get("errors", [])),
-                        context=str(rej.get("data", {}).get("name", "unknown")),
-                    )
+                # 3c: Save company immediately
+                if vc_db_id and self._supabase:
+                    company_id = await self._upsert_company(validated_company)
+                    if company_id:
+                        total_added += 1
+                        await self._upsert_investment(
+                            vc_id=vc_db_id,
+                            company_id=company_id,
+                            stage=validated_company.stage,
+                        )
+                        logger.info(
+                            "[%d/%d] Saved company: %s",
+                            i + 1, len(companies_raw), comp_name,
+                        )
 
-            # Stage 5: Save
-            logger.info("[5/5] Saving %d validated companies to database", len(validated))
-            save_stats = await self.save_results(
-                validated_companies=validated,
-                vc_config=vc_config,
-            )
-            stats.companies_added = save_stats.get("companies_added", 0)
-            stats.companies_updated = save_stats.get("companies_updated", 0)
-            stats.founders_added = save_stats.get("founders_added", 0)
+                        # 3d: Discover & save founders for this company
+                        try:
+                            enriched = await self._enricher.enrich_company(comp)
+                            founders_list = enriched.get("founders", [])
+                            for f_raw in founders_list:
+                                if isinstance(f_raw, dict) and f_raw.get("full_name"):
+                                    # Normalize role to string (Founder model expects string)
+                                    if isinstance(f_raw.get("role"), dict):
+                                        f_raw["role"] = f_raw["role"].get("title", "primary")
+                                    elif not f_raw.get("role"):
+                                        f_raw["role"] = "primary"
+                                    try:
+                                        from pipeline.validator import Founder
+                                        founder_obj = Founder(**f_raw)
+                                        founder_id = await self._upsert_founder(
+                                            founder_obj, company_id
+                                        )
+                                        if founder_id:
+                                            total_founders += 1
+                                            logger.info(
+                                                "  Saved founder: %s",
+                                                founder_obj.full_name,
+                                            )
+                                    except Exception as fexc:
+                                        logger.warning(
+                                            "  Founder validation failed for %r: %s",
+                                            f_raw.get("full_name"), fexc,
+                                        )
+                        except Exception as exc:
+                            logger.warning(
+                                "  Enrichment failed for %s: %s", comp_name, exc,
+                            )
+
+            stats.companies_added = total_added
+            stats.companies_updated = total_updated
+            stats.founders_added = total_founders
 
             # Record token usage
             stats.tokens_used = self._extractor.token_usage.total_tokens

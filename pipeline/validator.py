@@ -27,7 +27,7 @@ VALID_STAGES = {
     "Series C", "Series D", "Series E", "Growth",
 }
 
-VALID_STATUSES = {"Active", "Acquired", "IPO", "Shutdown", "Unknown"}
+VALID_STATUSES = {"Active", "Acquired", "IPO", "Shutdown", "Unknown", "Exited", "Merged"}
 
 VALID_ROLES = {"primary", "co-founder"}
 
@@ -128,6 +128,14 @@ class Founder(BaseModel):
     nationality: Optional[str] = None
     source_notes: Optional[str] = None
 
+    @field_validator("nationality", mode="before")
+    @classmethod
+    def normalize_nationality(cls, v):
+        """Convert list to string (LLMs sometimes return ['Irish-American'])."""
+        if isinstance(v, list):
+            return ", ".join(str(x) for x in v) if v else None
+        return v
+
     @field_validator("role")
     @classmethod
     def validate_role(cls, v: str) -> str:
@@ -138,11 +146,14 @@ class Founder(BaseModel):
         if normalized in VALID_ROLES:
             return normalized
         # Map common variants
-        role_map = {"founder": "primary", "cofounder": "co-founder", "co founder": "co-founder"}
+        role_map = {"founder": "primary", "cofounder": "co-founder", "co founder": "co-founder",
+                    "ceo": "primary", "cto": "co-founder", "coo": "co-founder",
+                    "cfo": "co-founder", "president": "primary", "managing partner": "primary"}
         if normalized in role_map:
             return role_map[normalized]
-        raise ValueError(f"role must be one of {VALID_ROLES}, got {v!r}")
-        return v
+        # Default to primary instead of rejecting
+        logger.warning("Unknown role %r, defaulting to 'primary'", v)
+        return "primary"
 
     @field_validator("education_tier")
     @classmethod
@@ -206,9 +217,11 @@ class Investment(BaseModel):
     @field_validator("stage")
     @classmethod
     def validate_stage(cls, v: str | None) -> str | None:
-        if v is not None and v not in VALID_STAGES:
-            raise ValueError(f"stage must be one of {VALID_STAGES}, got {v!r}")
-        return v
+        if v is None or v in VALID_STAGES:
+            return v
+        # Default unknown stages to None instead of rejecting
+        logger.warning("Unknown funding stage %r, defaulting to None", v)
+        return None
 
 
 class Company(BaseModel):
@@ -246,9 +259,26 @@ class Company(BaseModel):
     @field_validator("stage")
     @classmethod
     def validate_stage(cls, v: str | None) -> str | None:
-        if v is not None and v not in VALID_STAGES:
-            raise ValueError(f"stage must be one of {VALID_STAGES}, got {v!r}")
-        return v
+        if v is None or v in VALID_STAGES:
+            return v
+        # Normalize common LLM variants
+        stage_map = {
+            "pre-seed": "Pre-Seed", "preseed": "Pre-Seed", "angel": "Pre-Seed",
+            "seed": "Seed", "seed stage": "Seed",
+            "early": "Early", "early stage": "Early",
+            "series a": "Series A", "a": "Series A",
+            "series b": "Series B", "b": "Series B",
+            "series c": "Series C", "c": "Series C",
+            "series d": "Series D", "d": "Series D",
+            "series e": "Series E", "e": "Series E",
+            "growth": "Growth", "late stage": "Growth", "late": "Growth",
+        }
+        normalized = stage_map.get(v.lower().strip())
+        if normalized:
+            return normalized
+        # Default to None for unknown stages instead of rejecting
+        logger.warning("Unknown stage %r, defaulting to None", v)
+        return None
 
     @field_validator("status")
     @classmethod
@@ -273,6 +303,9 @@ class Company(BaseModel):
             "defunct": "Shutdown",
             "dead": "Shutdown",
             "unknown": "Unknown",
+            "exited": "Exited",
+            "exit": "Exited",
+            "merged": "Merged",
         }
         normalized = status_map.get(v.lower().strip())
         if normalized:
@@ -280,8 +313,11 @@ class Company(BaseModel):
         # If status contains "acquired", treat as Acquired
         if "acqui" in v.lower():
             return "Acquired"
-        raise ValueError(f"status must be one of {VALID_STATUSES}, got {v!r}")
-        return v
+        if "exit" in v.lower():
+            return "Exited"
+        # Default to Unknown instead of rejecting
+        logger.warning("Unknown status %r, defaulting to 'Unknown'", v)
+        return "Unknown"
 
     @field_validator("data_quality")
     @classmethod

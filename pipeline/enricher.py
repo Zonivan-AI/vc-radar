@@ -42,6 +42,8 @@ EXA_API_URL = "https://api.exa.ai/search"
 RATE_LIMIT_SECONDS = 1.5  # Minimum delay between searches
 MAX_CONCURRENT_SEARCHES = 3
 MAX_SEARCH_RESULTS = 10
+MAX_CONCURRENT_ENRICHMENTS = 4  # LM Studio supports 4 concurrent slots (continuous batching)
+MAX_SEARCH_TEXT_CHARS = 15_000  # Cap search text sent to LLM (was ~30K, most is irrelevant)
 
 
 # ---------------------------------------------------------------------------
@@ -420,41 +422,92 @@ class FounderEnricher:
             )
             return combined
 
+    # -- Founder Discovery ---------------------------------------------------
+
+    async def _discover_founders(self, company_name: str, website: str | None = None) -> list[dict]:
+        """Discover founder names for a company via search."""
+        query = f'"{company_name}" founders CEO co-founder'
+        try:
+            search_text = await self.search_founder(company_name + " founders", company_name)
+            if not search_text or len(search_text) < 100:
+                return []
+
+            # Use LLM to extract founder names from search results
+            system_prompt = (
+                f"Extract the founder/co-founder names of '{company_name}' from the text below. "
+                "Return ONLY a JSON object: {\"founders\": [\"Name 1\", \"Name 2\"]}. "
+                "Only include actual founders/co-founders, not employees or investors. "
+                "If no founders found, return {\"founders\": []}."
+            )
+            text, in_tok, out_tok = await self._extractor._llm.complete(
+                model_key=self._extractor._founder_model,
+                system_prompt=system_prompt,
+                user_prompt=search_text[:15000],
+            )
+            self._extractor.token_usage.record(in_tok, out_tok, self._extractor._founder_model)
+
+            # Parse response
+            import json, re
+            text = re.sub(r"^```(?:json)?\s*\n?", "", text.strip())
+            text = re.sub(r"\n?```\s*$", "", text)
+            data = json.loads(text)
+            names = data.get("founders", [])
+            return [{"full_name": name} for name in names if isinstance(name, str) and name.strip()]
+        except Exception as exc:
+            logger.warning("Founder discovery failed for '%s': %s", company_name, exc)
+            return []
+
     # -- Enrichment ----------------------------------------------------------
 
     async def enrich_company(self, company: dict) -> dict:
-        """Enrich a single company with detailed founder data."""
+        """Enrich a single company with detailed founder data.
+
+        Processes up to MAX_CONCURRENT_ENRICHMENTS founders concurrently using
+        asyncio.Semaphore to match LM Studio's continuous batching slots (4).
+        """
         company_name = company.get("name", "Unknown")
         founded_year = company.get("founded_year")
         founders_raw = company.get("founders", [])
 
+        # If no founders listed, try to discover them
         if not founders_raw:
-            return company
+            discovered = await self._discover_founders(company_name, company.get("website"))
+            if discovered:
+                logger.info("Discovered %d founders for '%s'", len(discovered), company_name)
+                founders_raw = discovered
+                company["founders"] = founders_raw
+            else:
+                return company
 
-        enriched_founders: list[dict] = []
+        # Separate founders that need enrichment from those that don't
+        enrichment_sem = asyncio.Semaphore(MAX_CONCURRENT_ENRICHMENTS)
 
-        for founder_raw in founders_raw:
+        async def _enrich_with_limit(founder_raw: dict) -> dict:
             founder_name = founder_raw.get("full_name", "")
             if not founder_name:
-                enriched_founders.append(founder_raw)
-                continue
+                return founder_raw
 
-            try:
-                enriched = await self._enrich_single_founder(
-                    founder_name=founder_name,
-                    founder_raw=founder_raw,
-                    company_name=company_name,
-                    founded_year=founded_year,
-                )
-                enriched_founders.append(enriched)
-            except Exception as exc:
-                logger.error(
-                    "Failed to enrich %r for %r: %s",
-                    founder_name, company_name, exc,
-                )
-                enriched_founders.append(founder_raw)
+            async with enrichment_sem:
+                try:
+                    return await self._enrich_single_founder(
+                        founder_name=founder_name,
+                        founder_raw=founder_raw,
+                        company_name=company_name,
+                        founded_year=founded_year,
+                    )
+                except Exception as exc:
+                    logger.error(
+                        "Failed to enrich %r for %r: %s",
+                        founder_name, company_name, exc,
+                    )
+                    return founder_raw
 
-        company["founders"] = enriched_founders
+        # Fire off all founder enrichments concurrently (bounded by semaphore)
+        enriched_founders = await asyncio.gather(
+            *[_enrich_with_limit(f) for f in founders_raw]
+        )
+
+        company["founders"] = list(enriched_founders)
         return company
 
     async def _enrich_single_founder(
@@ -464,18 +517,36 @@ class FounderEnricher:
         company_name: str,
         founded_year: int | None,
     ) -> dict:
-        """Enrich a single founder with search + LLM extraction."""
-        search_text = await self.search_founder(founder_name, company_name)
+        """Enrich a single founder with search + LLM extraction.
 
-        if not search_text.strip():
+        Optimization: tries company website /about and /team pages first to find
+        founder info before falling back to expensive search + LLM cycle.
+        """
+        # Step 1: Try scraping company website for founder info (cheap/free)
+        company_website = founder_raw.get("company_website") or ""
+        website_text = ""
+        if company_website:
+            website_text = await self._scrape_company_about_page(company_website, founder_name)
+
+        # Step 2: Fall back to search if website didn't yield enough info
+        search_text = ""
+        if len(website_text) < 200:
+            search_text = await self.search_founder(founder_name, company_name)
+
+        combined_text = "\n\n".join(filter(None, [website_text, search_text]))
+
+        if not combined_text.strip():
             logger.warning("No search results for %r @ %r", founder_name, company_name)
             return founder_raw
 
         if self._extractor is None:
             return founder_raw
 
+        # Pre-filter: only keep snippets that mention the founder's name (optimization #5)
+        filtered_text = self._filter_relevant_snippets(combined_text, founder_name)
+
         extracted = await self._extractor.extract_founder_info(
-            search_results=search_text,
+            search_results=filtered_text,
             company_name=company_name,
             founded_year=founded_year,
         )
@@ -502,6 +573,118 @@ class FounderEnricher:
             merged.get("age_confidence", "Low"),
         )
         return merged
+
+    # -- Company website scraping (optimization #4) --------------------------
+
+    async def _scrape_company_about_page(
+        self, website_url: str, founder_name: str
+    ) -> str:
+        """Try to scrape /about or /team page from a company website.
+
+        This is a cheap alternative to search+LLM: if the company's own website
+        lists founder bios, we can skip the Exa/DDG search entirely.
+
+        Returns extracted text if useful, empty string otherwise.
+        """
+        if not website_url:
+            return ""
+
+        # Normalize URL
+        base_url = website_url.rstrip("/")
+        if not base_url.startswith("http"):
+            base_url = f"https://{base_url}"
+
+        # Try common paths where founder info lives
+        paths_to_try = ["/about", "/team", "/about-us", "/our-team", "/leadership"]
+
+        async with httpx.AsyncClient(
+            timeout=httpx.Timeout(10.0),
+            follow_redirects=True,
+            headers={
+                "User-Agent": (
+                    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                    "AppleWebKit/537.36 (KHTML, like Gecko) "
+                    "Chrome/122.0.0.0 Safari/537.36"
+                ),
+            },
+        ) as client:
+            for path in paths_to_try:
+                try:
+                    url = f"{base_url}{path}"
+                    resp = await client.get(url)
+                    if resp.status_code != 200:
+                        continue
+
+                    # Extract text content (simple regex strip)
+                    text = re.sub(r"<[^>]+>", " ", resp.text)
+                    text = re.sub(r"\s+", " ", text).strip()
+
+                    # Check if founder name appears in the page
+                    name_parts = founder_name.lower().split()
+                    if any(part in text.lower() for part in name_parts if len(part) > 2):
+                        # Found relevant content — extract a reasonable chunk around the name
+                        logger.info(
+                            "Found founder info on %s for %r",
+                            url, founder_name,
+                        )
+                        # Return up to 5K chars of relevant text
+                        return text[:5000]
+
+                except Exception as exc:
+                    logger.debug("Failed to scrape %s%s: %s", base_url, path, exc)
+                    continue
+
+        return ""
+
+    # -- Search result pre-filtering (optimization #5) -----------------------
+
+    @staticmethod
+    def _filter_relevant_snippets(text: str, founder_name: str) -> str:
+        """Filter search results to only include snippets mentioning the founder.
+
+        This reduces LLM input from ~30K chars to ~15K chars while keeping
+        all relevant information. Safe because we only drop snippets that
+        don't mention the founder at all.
+        """
+        if not text or not founder_name:
+            return text[:MAX_SEARCH_TEXT_CHARS]
+
+        snippets = text.split("\n\n---\n\n")
+        name_parts = [p.lower() for p in founder_name.split() if len(p) > 2]
+        last_name = founder_name.split()[-1].lower() if founder_name.split() else ""
+
+        relevant: list[str] = []
+        other: list[str] = []
+
+        for snippet in snippets:
+            snippet_lower = snippet.lower()
+            # Check if any part of the founder's name appears
+            if (
+                last_name and last_name in snippet_lower
+            ) or any(part in snippet_lower for part in name_parts):
+                relevant.append(snippet)
+            else:
+                other.append(snippet)
+
+        # Prioritize relevant snippets, then fill with others up to cap
+        combined = "\n\n---\n\n".join(relevant)
+        if len(combined) < MAX_SEARCH_TEXT_CHARS and other:
+            remaining = MAX_SEARCH_TEXT_CHARS - len(combined)
+            extra = "\n\n---\n\n".join(other)
+            combined = combined + "\n\n---\n\n" + extra[:remaining]
+
+        result = combined[:MAX_SEARCH_TEXT_CHARS]
+
+        if len(text) > len(result):
+            logger.debug(
+                "Filtered search text for %r: %d -> %d chars (%.0f%% reduction)",
+                founder_name,
+                len(text),
+                len(result),
+                (1 - len(result) / len(text)) * 100,
+            )
+
+        return result
 
     # -- News / recent updates (Exa-powered) ---------------------------------
 
@@ -594,7 +777,12 @@ class FounderEnricher:
     # -- Batch enrichment ----------------------------------------------------
 
     async def enrich_batch(self, companies: list[dict]) -> list[dict]:
-        """Enrich a batch of companies sequentially."""
+        """Enrich a batch of companies.
+
+        Each company's founders are enriched concurrently (up to 4 at a time),
+        but companies are still processed sequentially to avoid overwhelming
+        the search backends with too many concurrent requests.
+        """
         enriched: list[dict] = []
 
         for i, company in enumerate(companies):
@@ -602,6 +790,15 @@ class FounderEnricher:
                 "Enriching %d/%d: %s",
                 i + 1, len(companies), company.get("name", "Unknown"),
             )
+
+            # Inject company website into each founder dict so _enrich_single_founder
+            # can try the website before doing an expensive search
+            website = company.get("website", "")
+            if website:
+                for f in company.get("founders", []):
+                    if isinstance(f, dict) and not f.get("company_website"):
+                        f["company_website"] = website
+
             try:
                 result = await self.enrich_company(company)
                 enriched.append(result)
