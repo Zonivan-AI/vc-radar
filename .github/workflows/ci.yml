@@ -1,0 +1,94 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  # ============================================================================
+  # Python checks — ruff lint + mypy type check on pipeline/
+  # ============================================================================
+  python:
+    name: Python (ruff + mypy)
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ runner.os }}-py311-${{ hashFiles('requirements*.txt', 'pyproject.toml', 'setup.cfg') }}
+          restore-keys: |
+            pip-${{ runner.os }}-py311-
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          # Install the project (and dev extras) if pyproject.toml is present
+          if [ -f pyproject.toml ]; then
+            pip install -e ".[dev]"
+          elif [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          fi
+          # Always ensure linting/type-checking tools are available
+          pip install ruff mypy
+
+      - name: Lint with ruff
+        run: |
+          ruff check pipeline/ exporters/
+          ruff format --check pipeline/ exporters/
+
+      - name: Type-check with mypy
+        run: |
+          mypy pipeline/ --ignore-missing-imports --strict-optional
+
+  # ============================================================================
+  # Dashboard checks — npm ci + build + TypeScript type check
+  # ============================================================================
+  dashboard:
+    name: Dashboard (build + tsc)
+    runs-on: ubuntu-24.04
+
+    defaults:
+      run:
+        working-directory: dashboard
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Cache npm dependencies
+        uses: actions/cache@v4
+        with:
+          path: dashboard/node_modules
+          key: npm-${{ runner.os }}-node20-${{ hashFiles('dashboard/package-lock.json') }}
+          restore-keys: |
+            npm-${{ runner.os }}-node20-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build dashboard
+        run: npm run build
+        env:
+          # Provide stub env vars so Next.js can build without a real Supabase instance
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder_anon_key
+
+      - name: TypeScript type check
+        run: npx tsc --noEmit
