@@ -354,15 +354,16 @@ class FounderEnricher:
         resolved_exa = exa_key or os.environ.get("EXA_API_KEY", "")
         resolved_serper = serper_key or os.environ.get("SERPER_API_KEY", "")
 
-        # Choose search backend: Exa > Serper > DuckDuckGo
-        if resolved_exa:
-            self._search_backend = ExaSearch(resolved_exa)
-            self._search_name = "Exa"
-            logger.info("FounderEnricher using Exa (semantic, $0.005/query)")
-        elif resolved_serper:
+        # Choose search backend: Serper > Exa > DuckDuckGo
+        # Serper is preferred — cheaper ($0.001/query vs $0.005) with Google results
+        if resolved_serper:
             self._search_backend = SerperSearch(resolved_serper)
             self._search_name = "Serper"
             logger.info("FounderEnricher using Serper (Google, $0.001/query)")
+        elif resolved_exa:
+            self._search_backend = ExaSearch(resolved_exa)
+            self._search_name = "Exa"
+            logger.info("FounderEnricher using Exa (semantic, $0.005/query)")
         else:
             self._search_backend = DuckDuckGoSearch()
             self._search_name = "DuckDuckGo"

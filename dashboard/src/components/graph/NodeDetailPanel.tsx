@@ -33,48 +33,48 @@ function VCDetail({
       {/* Header */}
       <div>
         <div className="flex items-center gap-2 mb-1">
-          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#7C8FFF' }} />
-          <span className="text-[11px] text-[#7C8FFF]">VC Firm</span>
+          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#B45309' }} />
+          <span className="text-[11px] text-[#B45309]">VC Firm</span>
         </div>
-        <h2 className="text-xl font-bold text-[#E2E8F0]">{vc.name}</h2>
+        <h2 className="text-xl font-bold text-[#292524]">{vc.name}</h2>
         {vc.hq_city && (
-          <p className="text-sm text-[#64748B] mt-0.5">{vc.hq_city}, {vc.hq_country}</p>
+          <p className="text-sm text-[#78716C] mt-0.5">{vc.hq_city}, {vc.hq_country}</p>
         )}
       </div>
 
       {/* Divider */}
-      <div className="h-px" style={{ background: 'linear-gradient(to right, rgba(148,163,184,0.08), transparent)' }} />
+      <div className="h-px" style={{ background: 'linear-gradient(to right, rgba(180,165,140,0.12), transparent)' }} />
 
       {/* Metrics Grid */}
       <div className="grid grid-cols-3 gap-4">
         {vc.aum_usd && (
           <div>
-            <div className="text-base font-semibold text-[#E2E8F0]">{formatCurrency(vc.aum_usd)}</div>
-            <div className="text-[10px] text-[#475569] uppercase">AUM</div>
+            <div className="text-base font-semibold text-[#292524]">{formatCurrency(vc.aum_usd)}</div>
+            <div className="text-[10px] text-[#A8A29E] uppercase">AUM</div>
           </div>
         )}
         {vc.founded_year && (
           <div>
-            <div className="text-base font-semibold text-[#E2E8F0]">{vc.founded_year}</div>
-            <div className="text-[10px] text-[#475569] uppercase">Founded</div>
+            <div className="text-base font-semibold text-[#292524]">{vc.founded_year}</div>
+            <div className="text-[10px] text-[#A8A29E] uppercase">Founded</div>
           </div>
         )}
         <div>
-          <div className="text-base font-semibold text-[#E2E8F0]">{portfolioNodes.length}</div>
-          <div className="text-[10px] text-[#475569] uppercase">Companies</div>
+          <div className="text-base font-semibold text-[#292524]">{portfolioNodes.length}</div>
+          <div className="text-[10px] text-[#A8A29E] uppercase">Companies</div>
         </div>
       </div>
 
       {/* Stages */}
       {vc.fund_stage?.length > 0 && (
         <div>
-          <p className="text-[10px] font-semibold text-[#475569] uppercase tracking-wider mb-2">Stages</p>
+          <p className="text-[10px] font-semibold text-[#A8A29E] uppercase tracking-wider mb-2">Stages</p>
           <div className="flex flex-wrap gap-1.5">
             {vc.fund_stage.map(stage => (
               <span
                 key={stage}
-                className="text-[11px] px-2.5 py-1 rounded-full text-[#7C8FFF]"
-                style={{ background: 'rgba(124, 143, 255, 0.08)', border: '1px solid rgba(124, 143, 255, 0.12)' }}
+                className="text-[11px] px-2.5 py-1 rounded-full text-[#B45309]"
+                style={{ background: 'rgba(180, 83, 9, 0.08)', border: '1px solid rgba(180, 83, 9, 0.12)' }}
               >
                 {stage}
               </span>
@@ -86,16 +86,16 @@ function VCDetail({
       {/* Portfolio */}
       {portfolioNodes.length > 0 && (
         <div>
-          <p className="text-[10px] font-semibold text-[#475569] uppercase tracking-wider mb-2">Portfolio</p>
+          <p className="text-[10px] font-semibold text-[#A8A29E] uppercase tracking-wider mb-2">Portfolio</p>
           <div className="space-y-0.5">
             {displayNodes.map(node => (
               <button
                 key={node.id}
                 onClick={() => onNavigateToNode(node.id)}
-                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-white/[0.03] transition-colors text-left"
+                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-black/[0.03] transition-colors text-left"
               >
-                <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: '#38BDF8' }} />
-                <span className="text-sm text-[#94A3B8] hover:text-[#E2E8F0] transition-colors">
+                <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: '#78716C' }} />
+                <span className="text-sm text-[#78716C] hover:text-[#292524] transition-colors">
                   {node.name}
                 </span>
               </button>
@@ -103,7 +103,7 @@ function VCDetail({
             {!showAll && portfolioNodes.length > 5 && (
               <button
                 onClick={() => setShowAll(true)}
-                className="text-[11px] text-[#7C8FFF] hover:text-[#A5B4FC] px-3 py-1.5 transition-colors"
+                className="text-[11px] text-[#B45309] hover:text-[#D97706] px-3 py-1.5 transition-colors"
               >
                 + {portfolioNodes.length - 5} more
               </button>
@@ -115,8 +115,8 @@ function VCDetail({
       {/* CTA */}
       <Link
         href={`/explore/vcs/${vc.slug}`}
-        className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-medium text-[#7C8FFF] transition-colors hover:text-[#A5B4FC]"
-        style={{ background: 'rgba(124, 143, 255, 0.06)', border: '1px solid rgba(124, 143, 255, 0.10)' }}
+        className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-medium text-[#B45309] transition-colors hover:text-[#D97706]"
+        style={{ background: 'rgba(180, 83, 9, 0.06)', border: '1px solid rgba(180, 83, 9, 0.10)' }}
       >
         View Profile <ArrowRight className="w-3.5 h-3.5" />
       </Link>
@@ -140,62 +140,62 @@ function CompanyDetail({
       {/* Header */}
       <div>
         <div className="flex items-center gap-2 mb-1">
-          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#38BDF8' }} />
-          <span className="text-[11px] text-[#38BDF8]">Company</span>
+          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#78716C' }} />
+          <span className="text-[11px] text-[#78716C]">Company</span>
         </div>
-        <h2 className="text-xl font-bold text-[#E2E8F0]">{company.name}</h2>
+        <h2 className="text-xl font-bold text-[#292524]">{company.name}</h2>
         {company.sector && (
-          <p className="text-sm text-[#64748B] mt-0.5">{company.sector}</p>
+          <p className="text-sm text-[#78716C] mt-0.5">{company.sector}</p>
         )}
       </div>
 
       {/* Divider */}
-      <div className="h-px" style={{ background: 'linear-gradient(to right, rgba(148,163,184,0.08), transparent)' }} />
+      <div className="h-px" style={{ background: 'linear-gradient(to right, rgba(180,165,140,0.12), transparent)' }} />
 
       {/* Metrics Grid */}
       <div className="grid grid-cols-3 gap-4">
         {company.stage && (
           <div>
-            <div className="text-base font-semibold text-[#E2E8F0]">{company.stage}</div>
-            <div className="text-[10px] text-[#475569] uppercase">Stage</div>
+            <div className="text-base font-semibold text-[#292524]">{company.stage}</div>
+            <div className="text-[10px] text-[#A8A29E] uppercase">Stage</div>
           </div>
         )}
         {company.founded_year && (
           <div>
-            <div className="text-base font-semibold text-[#E2E8F0]">{company.founded_year}</div>
-            <div className="text-[10px] text-[#475569] uppercase">Founded</div>
+            <div className="text-base font-semibold text-[#292524]">{company.founded_year}</div>
+            <div className="text-[10px] text-[#A8A29E] uppercase">Founded</div>
           </div>
         )}
         {company.total_raised_usd ? (
           <div>
-            <div className="text-base font-semibold text-[#E2E8F0]">{formatCurrency(company.total_raised_usd)}</div>
-            <div className="text-[10px] text-[#475569] uppercase">Raised</div>
+            <div className="text-base font-semibold text-[#292524]">{formatCurrency(company.total_raised_usd)}</div>
+            <div className="text-[10px] text-[#A8A29E] uppercase">Raised</div>
           </div>
         ) : (
           <div>
-            <div className="text-base font-semibold text-[#E2E8F0]">{company.status}</div>
-            <div className="text-[10px] text-[#475569] uppercase">Status</div>
+            <div className="text-base font-semibold text-[#292524]">{company.status}</div>
+            <div className="text-[10px] text-[#A8A29E] uppercase">Status</div>
           </div>
         )}
       </div>
 
       {company.city && (
-        <p className="text-xs text-[#64748B]">{company.city}, {company.country}</p>
+        <p className="text-xs text-[#78716C]">{company.city}, {company.country}</p>
       )}
 
       {/* Investors */}
       {investorNodes.length > 0 && (
         <div>
-          <p className="text-[10px] font-semibold text-[#475569] uppercase tracking-wider mb-2">Investors</p>
+          <p className="text-[10px] font-semibold text-[#A8A29E] uppercase tracking-wider mb-2">Investors</p>
           <div className="space-y-0.5">
             {investorNodes.map(node => (
               <button
                 key={node.id}
                 onClick={() => onNavigateToNode(node.id)}
-                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-white/[0.03] transition-colors text-left"
+                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-black/[0.03] transition-colors text-left"
               >
-                <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: '#7C8FFF' }} />
-                <span className="text-sm text-[#94A3B8] hover:text-[#E2E8F0] transition-colors">
+                <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: '#B45309' }} />
+                <span className="text-sm text-[#78716C] hover:text-[#292524] transition-colors">
                   {node.name}
                 </span>
               </button>
@@ -207,8 +207,8 @@ function CompanyDetail({
       {/* CTA */}
       <Link
         href={`/explore/companies/${company.slug}`}
-        className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-medium text-[#38BDF8] transition-colors hover:text-[#67E8F9]"
-        style={{ background: 'rgba(56, 189, 248, 0.06)', border: '1px solid rgba(56, 189, 248, 0.10)' }}
+        className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-medium text-[#78716C] transition-colors hover:text-[#57534E]"
+        style={{ background: 'rgba(120, 113, 108, 0.06)', border: '1px solid rgba(120, 113, 108, 0.10)' }}
       >
         View Profile <ArrowRight className="w-3.5 h-3.5" />
       </Link>
@@ -231,7 +231,7 @@ export function NodeDetailPanel({ node, onClose, onNavigateToNode, connectedNode
           <div className="p-5">
             <button
               onClick={onClose}
-              className="absolute top-4 right-4 p-1.5 rounded-lg text-[#475569] hover:text-[#E2E8F0] transition-colors"
+              className="absolute top-4 right-4 p-1.5 rounded-lg text-[#A8A29E] hover:text-[#57534E] transition-colors"
             >
               <X className="w-4 h-4" />
             </button>

@@ -2,6 +2,8 @@
 
 import { useState, useRef, useCallback, useMemo, useEffect } from 'react'
 import { Radio } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { RadarLogo } from '@/components/ui/radar-logo'
 import type { VCFirm, Company, Investment } from '@/lib/types'
 import type { GraphNode, GraphFilters } from '@/lib/graph-types'
 import { buildGraphData } from '@/lib/graph-data'
@@ -39,6 +41,12 @@ export function GraphPage({ vcs, companies, investments }: GraphPageProps) {
     searchQuery: '',
   })
   const [isLoading, setIsLoading] = useState(true)
+
+  // Fallback: auto-dismiss loading after 6s even if engine hasn't stopped
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 6000)
+    return () => clearTimeout(timer)
+  }, [])
 
   // Get connected nodes for the detail panel
   const connectedNodes = useMemo(() => {
@@ -135,33 +143,126 @@ export function GraphPage({ vcs, companies, investments }: GraphPageProps) {
 
   return (
     <div className="relative w-full h-[calc(100vh-64px)] overflow-hidden">
-      {/* Background gradient overlay */}
+      {/* Background gradient overlay - warm parchment */}
       <div
         className="absolute inset-0 pointer-events-none z-0"
         style={{
-          background: 'radial-gradient(ellipse at 50% 50%, #0F1629 0%, #060A14 70%)',
+          background: 'radial-gradient(ellipse at 50% 40%, #FBF9F4 0%, #F3EDE0 60%, #EAE1D0 100%)',
+        }}
+      />
+
+      {/* Subtle grid lines - cartographic feel */}
+      <div
+        className="absolute inset-0 pointer-events-none z-[1]"
+        style={{
+          backgroundImage: 'linear-gradient(rgba(180,165,140,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(180,165,140,0.06) 1px, transparent 1px)',
+          backgroundSize: '60px 60px',
+        }}
+      />
+
+      {/* Cinematic vignette overlay — subtle edge darkening */}
+      <div
+        className="absolute inset-0 pointer-events-none z-[2]"
+        style={{
+          background: 'radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(180,165,140,0.15) 100%)',
         }}
       />
 
       {/* Loading overlay */}
-      {isLoading && (
-        <div
-          className="absolute inset-0 z-50 flex flex-col items-center justify-center transition-opacity duration-500"
-          style={{ background: 'radial-gradient(ellipse at 50% 50%, #0F1629 0%, #060A14 70%)' }}
-        >
-          <div className="glass-panel p-8 flex flex-col items-center">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3" style={{ background: 'rgba(124, 143, 255, 0.12)' }}>
-              <Radio className="w-5 h-5 text-[#7C8FFF]" />
-            </div>
-            <p className="text-sm font-medium text-[#E2E8F0] mb-4">VC Radar</p>
-            <div className="flex gap-2">
-              <span className="w-1.5 h-1.5 rounded-full animate-breathe" style={{ backgroundColor: '#7C8FFF', animationDelay: '0ms' }} />
-              <span className="w-1.5 h-1.5 rounded-full animate-breathe" style={{ backgroundColor: '#7C8FFF', animationDelay: '300ms' }} />
-              <span className="w-1.5 h-1.5 rounded-full animate-breathe" style={{ backgroundColor: '#7C8FFF', animationDelay: '600ms' }} />
-            </div>
-          </div>
-        </div>
-      )}
+      <AnimatePresence>
+        {isLoading && (
+          <motion.div
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.8, ease: 'easeOut' }}
+            className="absolute inset-0 z-50 flex flex-col items-center justify-center"
+            style={{
+              background: 'radial-gradient(ellipse at 50% 40%, #FBF9F4 0%, #F3EDE0 60%, #EAE1D0 100%)',
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.5, ease: 'easeOut' }}
+              className="glass-panel p-12 flex flex-col items-center text-center"
+            >
+              {/* Animated radar logo with pulse rings */}
+              <div className="relative mb-6">
+                {/* Outer pulse ring */}
+                <div
+                  className="absolute -inset-4 rounded-full"
+                  style={{
+                    border: '1px solid rgba(180, 83, 9, 0.12)',
+                    animation: 'radar-pulse 2.5s ease-out infinite',
+                  }}
+                />
+                {/* Middle pulse ring */}
+                <div
+                  className="absolute -inset-2 rounded-full"
+                  style={{
+                    border: '1px solid rgba(180, 83, 9, 0.18)',
+                    animation: 'radar-pulse 2.5s ease-out infinite 0.4s',
+                  }}
+                />
+                <RadarLogo size="lg" animate className="rounded-2xl" />
+              </div>
+
+              <h1 className="text-xl font-bold text-[#292524] mb-1">VC Radar</h1>
+              <p className="text-sm text-[#78716C] mb-6 max-w-[280px]">
+                Scanning the venture capital landscape
+              </p>
+
+              {/* Stats preview */}
+              <div className="flex gap-8 mb-6">
+                <div className="text-center">
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                    className="text-lg font-bold text-[#B45309]"
+                  >
+                    {vcCount}
+                  </motion.div>
+                  <div className="text-[10px] text-[#A8A29E] uppercase tracking-wider">VCs</div>
+                </div>
+                <div className="text-center">
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.45 }}
+                    className="text-lg font-bold text-[#78716C]"
+                  >
+                    {companyCount.toLocaleString()}
+                  </motion.div>
+                  <div className="text-[10px] text-[#A8A29E] uppercase tracking-wider">Companies</div>
+                </div>
+                <div className="text-center">
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.6 }}
+                    className="text-lg font-bold text-[#57534E]"
+                  >
+                    {graphData.links.length.toLocaleString()}
+                  </motion.div>
+                  <div className="text-[10px] text-[#A8A29E] uppercase tracking-wider">Links</div>
+                </div>
+              </div>
+
+              {/* Radar sweep bar */}
+              <div className="w-48 h-1 bg-stone-200/60 rounded-full overflow-hidden">
+                <motion.div
+                  className="h-full rounded-full"
+                  style={{ background: 'linear-gradient(90deg, transparent, #B45309, transparent)' }}
+                  initial={{ x: '-100%' }}
+                  animate={{ x: '200%' }}
+                  transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+                />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* 3D Graph */}
       <GraphCanvas

@@ -29,7 +29,7 @@ function CustomTooltip({ active, payload }: { active?: boolean; payload?: Array<
   return (
     <div className="bg-surface-raised border border-border rounded-lg px-3 py-2 shadow-glass">
       <p className="text-sm font-medium text-text-primary">{data.name}</p>
-      <p className="text-xs text-indigo-light">{data.company}</p>
+      <p className="text-xs text-accent">{data.company}</p>
       <p className="text-xs text-text-secondary">
         Age at founding: {data.x} | Exp: {data.y} yrs
       </p>

@@ -44,7 +44,7 @@ export default function MatchPage() {
     <div className="page-container">
       <div className="max-w-3xl mx-auto">
         <div className="text-center mb-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo/10 text-indigo-light text-xs font-medium mb-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/10 text-accent text-xs font-medium mb-4">
             <Zap className="w-3.5 h-3.5" />
             Beta
           </div>
@@ -83,8 +83,8 @@ export default function MatchPage() {
                     onClick={() => setStage(s)}
                     className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                       stage === s
-                        ? 'bg-indigo text-white'
-                        : 'bg-surface border border-border text-text-secondary hover:text-text-primary hover:border-indigo/30'
+                        ? 'bg-accent text-white'
+                        : 'bg-surface border border-border text-text-secondary hover:text-text-primary hover:border-accent/30'
                     }`}
                   >
                     {s}
@@ -144,7 +144,7 @@ export default function MatchPage() {
               <div key={result.slug} className="glass-card-hover p-5">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-indigo/20 flex items-center justify-center text-sm font-bold text-indigo-light">
+                    <div className="w-8 h-8 rounded-lg bg-accent/20 flex items-center justify-center text-sm font-bold text-accent">
                       #{i + 1}
                     </div>
                     <div>
@@ -154,11 +154,11 @@ export default function MatchPage() {
                   <div className="flex items-center gap-2">
                     <div className="w-16 h-2 bg-surface-raised rounded-full overflow-hidden">
                       <div
-                        className="h-full rounded-full bg-gradient-to-r from-indigo to-emerald"
+                        className="h-full rounded-full bg-gradient-to-r from-accent to-emerald"
                         style={{ width: `${result.score}%` }}
                       />
                     </div>
-                    <span className="text-sm font-mono font-bold text-indigo-light">
+                    <span className="text-sm font-mono font-bold text-accent">
                       {result.score}%
                     </span>
                   </div>
@@ -174,7 +174,7 @@ export default function MatchPage() {
                   </div>
                   <Link
                     href={`/explore/vcs/${result.slug}`}
-                    className="text-xs text-indigo-light hover:text-indigo flex items-center gap-1"
+                    className="text-xs text-accent hover:text-accent flex items-center gap-1"
                   >
                     View Portfolio <ExternalLink className="w-3 h-3" />
                   </Link>

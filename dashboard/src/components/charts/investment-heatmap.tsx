@@ -17,10 +17,10 @@ interface InvestmentHeatmapProps {
 function getHeatColor(count: number, max: number): string {
   if (count === 0) return 'bg-white/[0.02]'
   const intensity = count / max
-  if (intensity > 0.7) return 'bg-indigo/60'
-  if (intensity > 0.4) return 'bg-indigo/35'
-  if (intensity > 0.2) return 'bg-indigo/20'
-  return 'bg-indigo/10'
+  if (intensity > 0.7) return 'bg-accent/60'
+  if (intensity > 0.4) return 'bg-accent/35'
+  if (intensity > 0.2) return 'bg-accent/20'
+  return 'bg-accent/10'
 }
 
 export function InvestmentHeatmap({ data, vcNames, sectors }: InvestmentHeatmapProps) {
@@ -61,7 +61,7 @@ export function InvestmentHeatmap({ data, vcNames, sectors }: InvestmentHeatmapP
                       className={cn(
                         'w-full h-7 rounded flex items-center justify-center transition-all',
                         getHeatColor(count, maxCount),
-                        count > 0 && 'hover:ring-1 hover:ring-indigo/50 cursor-default'
+                        count > 0 && 'hover:ring-1 hover:ring-accent/50 cursor-default'
                       )}
                       title={`${vc}: ${count} investments in ${sector}`}
                     >

@@ -47,7 +47,7 @@ export default function TrendsPage() {
             onClick={() => setActiveTab(tab)}
             className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
               activeTab === tab
-                ? 'bg-indigo/20 text-indigo-light'
+                ? 'bg-accent/20 text-accent'
                 : 'text-text-secondary hover:text-text-primary'
             }`}
           >

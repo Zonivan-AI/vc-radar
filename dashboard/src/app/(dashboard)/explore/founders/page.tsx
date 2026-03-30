@@ -57,7 +57,7 @@ export default function FounderAnalyticsPage() {
           <div className="flex items-center gap-4 text-xs">
             <div>
               <span className="text-text-muted">Median: </span>
-              <span className="font-mono font-semibold text-indigo-light">{stats.median_founder_age}</span>
+              <span className="font-mono font-semibold text-accent">{stats.median_founder_age}</span>
             </div>
             <div>
               <span className="text-text-muted">Mean: </span>
@@ -82,7 +82,7 @@ export default function FounderAnalyticsPage() {
         {/* Education Tier */}
         <div className="glass-card p-6">
           <h2 className="section-title mb-4 flex items-center gap-2">
-            <GraduationCap className="w-5 h-5 text-indigo-light" />
+            <GraduationCap className="w-5 h-5 text-accent" />
             Education Tier Breakdown
           </h2>
           <div className="space-y-3">
@@ -98,7 +98,7 @@ export default function FounderAnalyticsPage() {
                     </div>
                     <div className="w-full h-2 bg-surface-raised rounded-full overflow-hidden">
                       <div
-                        className="h-full rounded-full bg-indigo transition-all"
+                        className="h-full rounded-full bg-accent transition-all"
                         style={{ width: `${pct}%` }}
                       />
                     </div>
@@ -122,7 +122,7 @@ export default function FounderAnalyticsPage() {
               </div>
               <div className="w-full h-3 bg-surface-raised rounded-full overflow-hidden">
                 <div
-                  className="h-full rounded-full bg-indigo"
+                  className="h-full rounded-full bg-accent"
                   style={{ width: `${100 - priorFounderPct}%` }}
                 />
               </div>

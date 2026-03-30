@@ -70,16 +70,16 @@ export default async function HomePage() {
     <div>
       {/* Hero */}
       <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-radial from-indigo/5 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-radial from-accent/5 via-transparent to-transparent" />
         <div className="page-container relative">
           <div className="max-w-3xl mx-auto text-center py-16 sm:py-24">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo/10 text-indigo-light text-xs font-medium mb-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/10 text-accent text-xs font-medium mb-6">
               <Compass className="w-3.5 h-3.5" />
               Open-Source VC Intelligence
             </div>
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-text-primary leading-tight tracking-tight">
               Navigate the AI{' '}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo to-indigo-light">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-accent">
                 Investment Landscape
               </span>
             </h1>
@@ -127,7 +127,7 @@ export default async function HomePage() {
             <div className="flex items-center gap-4 text-xs">
               <div className="flex items-center gap-1.5">
                 <span className="text-text-muted">Median:</span>
-                <span className="font-mono font-semibold text-indigo-light">{stats.median_founder_age}</span>
+                <span className="font-mono font-semibold text-accent">{stats.median_founder_age}</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="text-text-muted">Mean:</span>

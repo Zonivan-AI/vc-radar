@@ -21,6 +21,12 @@ from typing import Any
 
 import yaml
 from dotenv import load_dotenv
+
+# Load .env BEFORE importing pipeline modules so they pick up env vars
+# (e.g., USE_CLOUD_ENRICHMENT, LMSTUDIO_API_URL)
+_env_path = Path(__file__).resolve().parent.parent / ".env"
+load_dotenv(_env_path)
+
 from supabase import Client as SupabaseClient
 from supabase import create_client
 
@@ -167,8 +173,10 @@ class PipelineScheduler:
         await scheduler.run_full_pipeline(vc_slugs=["a16z", "sequoia"])  # specific VCs
     """
 
-    def __init__(self) -> None:
+    def __init__(self, skip_founders: bool = False) -> None:
         load_dotenv(ENV_PATH)
+
+        self._skip_founders = skip_founders
 
         # Load VC configurations
         self._vc_configs = _load_vc_configs()
@@ -176,7 +184,7 @@ class PipelineScheduler:
         # Initialize components (extractor no longer requires api_key positional arg)
         self._scraper = VCScraper()
         self._extractor = DataExtractor()
-        self._enricher = FounderEnricher(extractor=self._extractor)
+        self._enricher = FounderEnricher(extractor=self._extractor) if not skip_founders else None
         self._validator = DataValidator()
 
         # Initialize Supabase client
@@ -233,11 +241,12 @@ class PipelineScheduler:
         results: list[dict] = []
 
         try:
-            await self._scraper.init()
-
             for vc_config in configs:
                 slug = vc_config.get("slug", "unknown")
                 try:
+                    # Init scraper fresh for each VC (closed after scraping to free
+                    # network resources for LLM calls)
+                    await self._scraper.init()
                     result = await self.run_single_vc(vc_config)
                     results.append(result)
                 except Exception as exc:
@@ -249,9 +258,11 @@ class PipelineScheduler:
                             "error": str(exc),
                         }
                     )
+                finally:
+                    await self._scraper.close()
         finally:
-            await self._scraper.close()
-            await self._enricher.close()
+            if self._enricher:
+                await self._enricher.close()
             await self._extractor.close()
 
         # Summary
@@ -297,6 +308,9 @@ class PipelineScheduler:
             if not scrape_results or not scrape_results[0].all_html:
                 raise RuntimeError(f"No HTML content scraped for {slug}")
             html_content = scrape_results[0].all_html
+
+            # Close browser before LLM calls to avoid connection conflicts
+            await self._scraper.close()
 
             # Stage 2: Extract
             logger.info("[2/5] Extracting companies from HTML for %s", name)
@@ -398,36 +412,37 @@ class PipelineScheduler:
                         )
 
                         # 3d: Discover & save founders for this company
-                        try:
-                            enriched = await self._enricher.enrich_company(comp)
-                            founders_list = enriched.get("founders", [])
-                            for f_raw in founders_list:
-                                if isinstance(f_raw, dict) and f_raw.get("full_name"):
-                                    # Normalize role to string (Founder model expects string)
-                                    if isinstance(f_raw.get("role"), dict):
-                                        f_raw["role"] = f_raw["role"].get("title", "primary")
-                                    elif not f_raw.get("role"):
-                                        f_raw["role"] = "primary"
-                                    try:
-                                        from pipeline.validator import Founder
-                                        founder_obj = Founder(**f_raw)
-                                        founder_id = await self._upsert_founder(
-                                            founder_obj, company_id
-                                        )
-                                        if founder_id:
-                                            total_founders += 1
-                                            logger.info(
-                                                "  Saved founder: %s",
-                                                founder_obj.full_name,
+                        if not self._skip_founders and self._enricher:
+                            try:
+                                enriched = await self._enricher.enrich_company(comp)
+                                founders_list = enriched.get("founders", [])
+                                for f_raw in founders_list:
+                                    if isinstance(f_raw, dict) and f_raw.get("full_name"):
+                                        # Normalize role to string (Founder model expects string)
+                                        if isinstance(f_raw.get("role"), dict):
+                                            f_raw["role"] = f_raw["role"].get("title", "primary")
+                                        elif not f_raw.get("role"):
+                                            f_raw["role"] = "primary"
+                                        try:
+                                            from pipeline.validator import Founder
+                                            founder_obj = Founder(**f_raw)
+                                            founder_id = await self._upsert_founder(
+                                                founder_obj, company_id
                                             )
-                                    except Exception as fexc:
-                                        logger.warning(
-                                            "  Founder validation failed for %r: %s",
-                                            f_raw.get("full_name"), fexc,
-                                        )
-                        except Exception as exc:
-                            logger.warning(
-                                "  Enrichment failed for %s: %s", comp_name, exc,
+                                            if founder_id:
+                                                total_founders += 1
+                                                logger.info(
+                                                    "  Saved founder: %s",
+                                                    founder_obj.full_name,
+                                                )
+                                        except Exception as fexc:
+                                            logger.warning(
+                                                "  Founder validation failed for %r: %s",
+                                                f_raw.get("full_name"), fexc,
+                                            )
+                            except Exception as exc:
+                                logger.warning(
+                                    "  Enrichment failed for %s: %s", comp_name, exc,
                             )
 
             stats.companies_added = total_added
@@ -540,24 +555,45 @@ class PipelineScheduler:
         if not self._supabase:
             return None
 
+        slug = vc_config.get("slug", "")
+        name = vc_config.get("name", "")
+
         data = {
-            "name": vc_config.get("name", ""),
-            "slug": vc_config.get("slug", ""),
+            "name": name,
+            "slug": slug,
             "website": vc_config.get("website"),
             "fund_stage": vc_config.get("fund_stage", []),
             "focus_sectors": vc_config.get("focus_sectors", []),
         }
 
         try:
-            result = (
+            # Check if VC already exists by slug or name
+            existing = (
                 self._supabase.table("vc_firms")
-                .upsert(data, on_conflict="slug")
+                .select("id, slug")
+                .or_(f"slug.eq.{slug},name.eq.{name}")
+                .limit(1)
                 .execute()
             )
-            if result.data:
-                vc_id = result.data[0]["id"]
-                logger.debug("Upserted VC firm %r -> %s", data["slug"], vc_id)
+            if existing.data:
+                # Update existing record
+                vc_id = existing.data[0]["id"]
+                existing_slug = existing.data[0]["slug"]
+                update_data = {k: v for k, v in data.items() if v is not None and k != "slug"}
+                self._supabase.table("vc_firms").update(update_data).eq("id", vc_id).execute()
+                logger.debug("Updated VC firm %r (%s) -> %s", slug, existing_slug, vc_id)
                 return vc_id
+            else:
+                # Insert new
+                result = (
+                    self._supabase.table("vc_firms")
+                    .insert(data)
+                    .execute()
+                )
+                if result.data:
+                    vc_id = result.data[0]["id"]
+                    logger.debug("Inserted VC firm %r -> %s", slug, vc_id)
+                    return vc_id
         except Exception as exc:
             logger.error("Failed to upsert VC firm %r: %s", data["slug"], exc)
 
@@ -867,6 +903,11 @@ Examples:
         action="store_true",
         help="Validate configuration and exit without running the pipeline",
     )
+    parser.add_argument(
+        "--skip-founders",
+        action="store_true",
+        help="Skip founder enrichment (useful when Serper is out of credits)",
+    )
     return parser.parse_args(argv)
 
 
@@ -884,7 +925,7 @@ async def async_main(args: argparse.Namespace) -> None:
             logger.info("  - %s (%s): %d URLs", cfg.get("name"), cfg.get("slug"), len(cfg.get("portfolio_urls", [])))
         return
 
-    scheduler = PipelineScheduler()
+    scheduler = PipelineScheduler(skip_founders=args.skip_founders)
     results = await scheduler.run_full_pipeline(vc_slugs=args.vcs)
 
     # Print summary

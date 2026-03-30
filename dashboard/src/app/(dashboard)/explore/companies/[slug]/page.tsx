@@ -64,7 +64,7 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
               Founded {company.founded_year}
             </div>
           )}
-          {company.stage && <Badge variant="indigo">{company.stage}</Badge>}
+          {company.stage && <Badge variant="accent">{company.stage}</Badge>}
           {company.total_raised_usd && (
             <span className="font-mono text-emerald">
               {formatCurrency(company.total_raised_usd)} raised
@@ -81,7 +81,7 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
           <span className="text-xs text-text-muted">Investor: </span>
           <Link
             href={`/explore/vcs/${investorVC.slug}`}
-            className="text-sm text-indigo-light hover:text-indigo transition-colors"
+            className="text-sm text-accent hover:text-accent transition-colors"
           >
             {investorVC.name}
           </Link>
@@ -92,7 +92,7 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
       {primaryFounder && (
         <div className="glass-card p-6 mb-6">
           <h2 className="section-title mb-4 flex items-center gap-2">
-            <User className="w-5 h-5 text-indigo-light" />
+            <User className="w-5 h-5 text-accent" />
             Founder Profile
           </h2>
 
@@ -138,7 +138,7 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
                 <div className="mt-3 flex items-center gap-2 text-sm">
                   <GraduationCap className="w-4 h-4 text-text-muted" />
                   {primaryFounder.education_tier && (
-                    <Badge variant={primaryFounder.education_tier === 'Top-10' ? 'indigo' : 'default'}>
+                    <Badge variant={primaryFounder.education_tier === 'Top-10' ? 'accent' : 'default'}>
                       {primaryFounder.education_tier}
                     </Badge>
                   )}
@@ -184,7 +184,7 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
               <Link
                 key={c.id}
                 href={`/explore/companies/${c.slug}`}
-                className="badge-indigo hover:bg-indigo/20 transition-colors"
+                className="badge-accent hover:bg-accent/20 transition-colors"
               >
                 {c.name}
               </Link>

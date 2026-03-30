@@ -9,6 +9,7 @@ import {
   Building2, Briefcase, Users, TrendingUp,
   Compass, Zap, Radio
 } from 'lucide-react'
+import { RadarLogo } from '@/components/ui/radar-logo'
 
 const exploreItems = [
   { href: '/explore/vcs', label: 'VC Firms', icon: Building2, description: 'Browse 20+ VC firms' },
@@ -36,16 +37,14 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
     <nav className={cn(
       'sticky top-0 z-50 border-b',
       isTransparent
-        ? 'backdrop-blur-xl border-white/[0.04]'
+        ? 'backdrop-blur-xl bg-white/[0.35] border-stone-300/[0.08]'
         : 'bg-background/80 backdrop-blur-xl border-border'
     )}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 group">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors" style={{ background: 'rgba(124, 143, 255, 0.12)' }}>
-              <Radio className="w-4 h-4" style={{ color: '#7C8FFF' }} />
-            </div>
+            <RadarLogo size="sm" />
             <span className="text-lg font-bold text-text-primary tracking-tight">
               VC Radar
             </span>
@@ -61,8 +60,8 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
               <button className={cn(
                 'flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
                 pathname.startsWith('/explore')
-                  ? 'text-indigo-light bg-indigo/10'
-                  : 'text-text-secondary hover:text-text-primary hover:bg-white/5'
+                  ? 'text-accent bg-accent/10'
+                  : 'text-text-secondary hover:text-text-primary hover:bg-black/[0.03]'
               )}>
                 Explore
                 <ChevronDown className={cn('w-4 h-4 transition-transform', exploreOpen && 'rotate-180')} />
@@ -77,8 +76,8 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
                       className={cn(
                         'flex items-center gap-3 px-4 py-3 transition-colors',
                         pathname === item.href
-                          ? 'bg-indigo/10 text-indigo-light'
-                          : 'hover:bg-white/5 text-text-secondary hover:text-text-primary'
+                          ? 'bg-accent/10 text-accent'
+                          : 'hover:bg-black/[0.03] text-text-secondary hover:text-text-primary'
                       )}
                     >
                       <item.icon className="w-5 h-5" />
@@ -99,8 +98,8 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
                 className={cn(
                   'px-3 py-2 rounded-lg text-sm font-medium transition-colors',
                   pathname === item.href
-                    ? 'text-indigo-light bg-indigo/10'
-                    : 'text-text-secondary hover:text-text-primary hover:bg-white/5'
+                    ? 'text-accent bg-accent/10'
+                    : 'text-text-secondary hover:text-text-primary hover:bg-black/[0.03]'
                 )}
               >
                 {item.label}
@@ -118,7 +117,7 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
               href="https://github.com/Zonivan-AI/vc-radar"
               target="_blank"
               rel="noopener noreferrer"
-              className="p-2 rounded-lg text-text-secondary hover:text-text-primary hover:bg-white/5 transition-colors"
+              className="p-2 rounded-lg text-text-secondary hover:text-text-primary hover:bg-black/[0.03] transition-colors"
             >
               <Github className="w-5 h-5" />
             </a>
@@ -145,7 +144,7 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
               <Link
                 key={item.href}
                 href={item.href}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-secondary hover:text-text-primary hover:bg-white/5"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-secondary hover:text-text-primary hover:bg-black/[0.03]"
                 onClick={() => setMobileOpen(false)}
               >
                 <item.icon className="w-4 h-4" />
@@ -157,7 +156,7 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
               <Link
                 key={item.href}
                 href={item.href}
-                className="block px-3 py-2.5 rounded-lg text-sm text-text-secondary hover:text-text-primary hover:bg-white/5"
+                className="block px-3 py-2.5 rounded-lg text-sm text-text-secondary hover:text-text-primary hover:bg-black/[0.03]"
                 onClick={() => setMobileOpen(false)}
               >
                 {item.label}
@@ -165,7 +164,7 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
             ))}
             <Link
               href="/data"
-              className="block px-3 py-2.5 rounded-lg text-sm text-text-secondary hover:text-text-primary hover:bg-white/5"
+              className="block px-3 py-2.5 rounded-lg text-sm text-text-secondary hover:text-text-primary hover:bg-black/[0.03]"
               onClick={() => setMobileOpen(false)}
             >
               Data & API

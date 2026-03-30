@@ -1,7 +1,31 @@
+'use client'
+
 import { Download, Github, Code, Database, FileSpreadsheet, FileJson, ExternalLink } from 'lucide-react'
 import Link from 'next/link'
+import { useState, useEffect } from 'react'
+import { supabase } from '@/lib/supabase'
 
 export default function DataPage() {
+  const [counts, setCounts] = useState({ vcs: 0, companies: 0, founders: 0 })
+
+  useEffect(() => {
+    async function loadCounts() {
+      try {
+        const [v, c, f] = await Promise.all([
+          supabase.from('vc_firms').select('id', { count: 'exact', head: true }),
+          supabase.from('portfolio_companies').select('id', { count: 'exact', head: true }),
+          supabase.from('founders').select('id', { count: 'exact', head: true }),
+        ])
+        setCounts({
+          vcs: v.count ?? 0,
+          companies: c.count ?? 0,
+          founders: f.count ?? 0,
+        })
+      } catch {}
+    }
+    loadCounts()
+  }, [])
+
   return (
     <div className="page-container">
       <div className="max-w-4xl mx-auto">
@@ -15,20 +39,20 @@ export default function DataPage() {
         {/* Download Section */}
         <div className="glass-card p-6 mb-6">
           <h2 className="section-title mb-1 flex items-center gap-2">
-            <Download className="w-5 h-5 text-indigo-light" />
+            <Download className="w-5 h-5 text-accent" />
             Download Dataset
           </h2>
           <p className="section-subtitle mb-6">
-            Complete dataset of 142 companies, 20 VCs, and 300+ founders. Updated weekly.
+            Complete dataset of {counts.companies.toLocaleString()} companies, {counts.vcs.toLocaleString()} VCs, and {counts.founders.toLocaleString()} founders. Updated weekly.
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <a
               href="/api/export/csv"
-              className="p-4 rounded-lg border border-border hover:border-indigo/30 hover:bg-white/[0.02] transition-all group text-center"
+              className="p-4 rounded-lg border border-border hover:border-accent/30 hover:bg-white/[0.02] transition-all group text-center"
             >
               <FileSpreadsheet className="w-8 h-8 text-emerald mx-auto mb-2" />
-              <div className="font-medium text-text-primary group-hover:text-indigo-light transition-colors">
+              <div className="font-medium text-text-primary group-hover:text-accent transition-colors">
                 CSV
               </div>
               <div className="text-xs text-text-muted mt-1">Comma-separated values</div>
@@ -36,10 +60,10 @@ export default function DataPage() {
 
             <a
               href="/api/export/json"
-              className="p-4 rounded-lg border border-border hover:border-indigo/30 hover:bg-white/[0.02] transition-all group text-center"
+              className="p-4 rounded-lg border border-border hover:border-accent/30 hover:bg-white/[0.02] transition-all group text-center"
             >
               <FileJson className="w-8 h-8 text-amber mx-auto mb-2" />
-              <div className="font-medium text-text-primary group-hover:text-indigo-light transition-colors">
+              <div className="font-medium text-text-primary group-hover:text-accent transition-colors">
                 JSON
               </div>
               <div className="text-xs text-text-muted mt-1">Structured JSON with relations</div>
@@ -47,10 +71,10 @@ export default function DataPage() {
 
             <a
               href="/api/export/xlsx"
-              className="p-4 rounded-lg border border-border hover:border-indigo/30 hover:bg-white/[0.02] transition-all group text-center"
+              className="p-4 rounded-lg border border-border hover:border-accent/30 hover:bg-white/[0.02] transition-all group text-center"
             >
-              <FileSpreadsheet className="w-8 h-8 text-indigo-light mx-auto mb-2" />
-              <div className="font-medium text-text-primary group-hover:text-indigo-light transition-colors">
+              <FileSpreadsheet className="w-8 h-8 text-accent mx-auto mb-2" />
+              <div className="font-medium text-text-primary group-hover:text-accent transition-colors">
                 Excel
               </div>
               <div className="text-xs text-text-muted mt-1">Formatted .xlsx with analytics</div>
@@ -78,7 +102,7 @@ export default function DataPage() {
             ].map(endpoint => (
               <div key={endpoint.path} className="flex items-center gap-3 p-3 rounded-lg bg-surface-raised/50">
                 <span className="badge-emerald text-[10px] font-mono">{endpoint.method}</span>
-                <code className="text-sm text-indigo-light font-mono flex-1">{endpoint.path}</code>
+                <code className="text-sm text-accent font-mono flex-1">{endpoint.path}</code>
                 <span className="text-xs text-text-muted hidden sm:inline">{endpoint.desc}</span>
               </div>
             ))}
@@ -86,11 +110,11 @@ export default function DataPage() {
 
           <div className="mt-4 p-3 rounded-lg bg-surface-raised/30 border border-border/50">
             <p className="text-xs text-text-muted">
-              Base URL: <code className="text-indigo-light">https://your-project.supabase.co</code>
+              Base URL: <code className="text-accent">https://your-project.supabase.co</code>
             </p>
             <p className="text-xs text-text-muted mt-1">
               Add <code className="text-amber">?select=name,sector&order=name</code> for filtering and sorting.
-              See <a href="https://supabase.com/docs/reference/javascript" target="_blank" rel="noopener noreferrer" className="text-indigo-light hover:text-indigo">Supabase docs</a> for full API reference.
+              See <a href="https://supabase.com/docs/reference/javascript" target="_blank" rel="noopener noreferrer" className="text-accent hover:text-accent">Supabase docs</a> for full API reference.
             </p>
           </div>
         </div>
@@ -109,7 +133,7 @@ export default function DataPage() {
             <div className="p-4 rounded-lg border border-border/50">
               <h3 className="text-sm font-semibold text-text-primary mb-2">Add a new VC firm</h3>
               <p className="text-xs text-text-secondary mb-3">
-                Edit <code className="text-indigo-light">config/vc_list.yaml</code> and submit a PR.
+                Edit <code className="text-accent">config/vc_list.yaml</code> and submit a PR.
                 The pipeline will automatically scrape and process the new VC.
               </p>
               <a
@@ -168,7 +192,7 @@ export default function DataPage() {
             </p>
             <p className="text-text-muted text-xs mt-4">
               If you are a founder and want your data removed or corrected, please{' '}
-              <a href="https://github.com/Zonivan-AI/vc-radar/issues" target="_blank" rel="noopener noreferrer" className="text-indigo-light hover:text-indigo">
+              <a href="https://github.com/Zonivan-AI/vc-radar/issues" target="_blank" rel="noopener noreferrer" className="text-accent hover:text-accent">
                 open an issue
               </a>{' '}
               on GitHub.

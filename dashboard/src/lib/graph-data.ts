@@ -1,9 +1,7 @@
 import type { VCFirm, Company, Investment } from './types'
 import type { GraphNode, GraphLink, GraphData } from './graph-types'
 import { formatCurrency } from './utils'
-
-const VC_COLOR = '#7C8FFF'
-const COMPANY_COLOR = '#38BDF8'
+import { getSectorColor, VC_GRADIENT } from './graph-colors'
 
 function vcNodeSize(vc: VCFirm): number {
   if (!vc.aum_usd) return 10
@@ -30,7 +28,8 @@ export function buildGraphData(
       type: 'vc',
       name: vc.name,
       size: vcNodeSize(vc),
-      color: VC_COLOR,
+      color: VC_GRADIENT.primary,
+      glowColor: VC_GRADIENT.glow,
       data: vc,
     })
   }
@@ -41,12 +40,15 @@ export function buildGraphData(
   // Create Company nodes (only those with at least one investment link)
   for (const company of companies) {
     if (!investedCompanyIds.has(company.id)) continue
+    const sectorColor = getSectorColor(company.sector)
     nodes.push({
       id: company.id,
       type: 'company',
       name: company.name,
       size: companyNodeSize(company),
-      color: COMPANY_COLOR,
+      color: sectorColor,
+      glowColor: sectorColor,
+      sector: company.sector ?? undefined,
       data: company,
     })
   }

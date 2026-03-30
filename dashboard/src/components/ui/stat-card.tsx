@@ -18,7 +18,7 @@ export function StatCard({ label, value, subtitle, icon: Icon, trend, className 
           {label}
         </span>
         {Icon && (
-          <div className="p-1.5 rounded-lg bg-indigo/10 text-indigo-light group-hover:bg-indigo/20 transition-colors">
+          <div className="p-1.5 rounded-lg bg-accent/10 text-accent group-hover:bg-accent/20 transition-colors">
             <Icon className="w-4 h-4" />
           </div>
         )}

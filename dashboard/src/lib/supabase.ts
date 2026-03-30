@@ -17,12 +17,23 @@ export const supabase = supabaseUrl && supabaseAnonKey
 // ============================================================================
 
 export async function getVCFirms(): Promise<VCFirm[]> {
-  const { data, error } = await supabase
-    .from('vc_firms')
-    .select('*')
-    .order('name')
-  if (error) throw error
-  return data ?? []
+  // Supabase default limit is 1000 — paginate to get all
+  const all: VCFirm[] = []
+  let from = 0
+  const batchSize = 1000
+  while (true) {
+    const { data, error } = await supabase
+      .from('vc_firms')
+      .select('*')
+      .order('name')
+      .range(from, from + batchSize - 1)
+    if (error) throw error
+    if (!data || data.length === 0) break
+    all.push(...data)
+    if (data.length < batchSize) break
+    from += batchSize
+  }
+  return all
 }
 
 export async function getVCBySlug(slug: string): Promise<VCFirm | null> {
@@ -40,12 +51,22 @@ export async function getVCBySlug(slug: string): Promise<VCFirm | null> {
 // ============================================================================
 
 export async function getCompanies(): Promise<Company[]> {
-  const { data, error } = await supabase
-    .from('portfolio_companies')
-    .select('*')
-    .order('name')
-  if (error) throw error
-  return data ?? []
+  const all: Company[] = []
+  let from = 0
+  const batchSize = 1000
+  while (true) {
+    const { data, error } = await supabase
+      .from('portfolio_companies')
+      .select('*')
+      .order('name')
+      .range(from, from + batchSize - 1)
+    if (error) throw error
+    if (!data || data.length === 0) break
+    all.push(...data)
+    if (data.length < batchSize) break
+    from += batchSize
+  }
+  return all
 }
 
 export async function getCompanyBySlug(slug: string): Promise<Company | null> {
@@ -78,12 +99,22 @@ export async function getCompaniesByVC(vcId: string): Promise<(Company & { stage
 // ============================================================================
 
 export async function getFounders(): Promise<Founder[]> {
-  const { data, error } = await supabase
-    .from('founders')
-    .select('*')
-    .order('full_name')
-  if (error) throw error
-  return data ?? []
+  const all: Founder[] = []
+  let from = 0
+  const batchSize = 1000
+  while (true) {
+    const { data, error } = await supabase
+      .from('founders')
+      .select('*')
+      .order('full_name')
+      .range(from, from + batchSize - 1)
+    if (error) throw error
+    if (!data || data.length === 0) break
+    all.push(...data)
+    if (data.length < batchSize) break
+    from += batchSize
+  }
+  return all
 }
 
 export async function getFoundersByCompany(companyId: string): Promise<Founder[]> {
@@ -125,6 +156,32 @@ export async function getVCsForCompany(companyId: string): Promise<VCFirm[]> {
     .eq('company_id', companyId)
   if (error) throw error
   return (data ?? []).map((d: Record<string, unknown>) => d.vc as VCFirm)
+}
+
+// ============================================================================
+// VCs with Investment Counts (replaces mv_vc_stats dependency)
+// ============================================================================
+
+export async function getVCsWithCounts(): Promise<(VCFirm & { company_count: number })[]> {
+  // Fetch all VCs
+  const vcs = await getVCFirms()
+
+  // Fetch investment counts grouped by vc_id
+  const { data: counts, error } = await supabase
+    .from('investments')
+    .select('vc_id')
+  if (error) throw error
+
+  // Count investments per VC
+  const countMap = new Map<string, number>()
+  for (const inv of counts ?? []) {
+    countMap.set(inv.vc_id, (countMap.get(inv.vc_id) ?? 0) + 1)
+  }
+
+  return vcs.map(vc => ({
+    ...vc,
+    company_count: countMap.get(vc.id) ?? 0,
+  }))
 }
 
 // ============================================================================
@@ -170,11 +227,21 @@ export async function getAgeBuckets(): Promise<AgeBucket[]> {
 // ============================================================================
 
 export async function getInvestments(): Promise<Investment[]> {
-  const { data, error } = await supabase
-    .from('investments')
-    .select('*')
-  if (error) throw error
-  return data ?? []
+  const all: Investment[] = []
+  let from = 0
+  const batchSize = 1000
+  while (true) {
+    const { data, error } = await supabase
+      .from('investments')
+      .select('*')
+      .range(from, from + batchSize - 1)
+    if (error) throw error
+    if (!data || data.length === 0) break
+    all.push(...data)
+    if (data.length < batchSize) break
+    from += batchSize
+  }
+  return all
 }
 
 // ============================================================================

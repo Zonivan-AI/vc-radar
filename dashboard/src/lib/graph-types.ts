@@ -6,6 +6,8 @@ export interface GraphNode {
   name: string
   size: number
   color: string
+  glowColor?: string
+  sector?: string
   data: VCFirm | Company
   // d3-force mutable properties
   x?: number

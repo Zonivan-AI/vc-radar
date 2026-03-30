@@ -9,6 +9,7 @@ import {
   Sparkles, BarChart3, Globe,
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { RadarLogo } from '@/components/ui/radar-logo'
 import type { GraphNode, GraphFilters } from '@/lib/graph-types'
 import type { VCFirm, Company, Investment } from '@/lib/types'
 
@@ -131,7 +132,7 @@ function TypewriterText({ text, onDone }: { text: string; onDone?: () => void })
     <span>
       {displayed}
       {displayed.length < text.length && (
-        <span className="inline-block w-[2px] h-[14px] bg-[#7C8FFF] ml-0.5 align-middle animate-pulse" />
+        <span className="inline-block w-[2px] h-[14px] bg-[#B45309] ml-0.5 align-middle animate-pulse" />
       )}
     </span>
   )
@@ -389,13 +390,13 @@ export function ChatPanel({
       >
         <button
           onClick={() => setCollapsed(false)}
-          className="p-2 rounded-lg text-[#64748B] hover:text-[#E2E8F0] transition-colors"
+          className="p-2 rounded-lg text-[#A8A29E] hover:text-[#292524] transition-colors"
         >
           <ChevronRight className="w-4 h-4" />
         </button>
         <button
           onClick={() => { setCollapsed(false); inputRef.current?.focus() }}
-          className="p-2 rounded-lg text-[#64748B] hover:text-[#E2E8F0] transition-colors"
+          className="p-2 rounded-lg text-[#A8A29E] hover:text-[#292524] transition-colors"
         >
           <Sparkles className="w-4 h-4" />
         </button>
@@ -415,101 +416,138 @@ export function ChatPanel({
       {/* Header */}
       <div className="px-4 pt-4 pb-2 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div
-            className="w-7 h-7 rounded-lg flex items-center justify-center"
-            style={{ background: 'rgba(124, 143, 255, 0.12)' }}
-          >
-            <Sparkles className="w-3.5 h-3.5 text-[#7C8FFF]" />
-          </div>
+          <RadarLogo size="sm" />
           <div>
-            <p className="text-sm font-medium text-[#E2E8F0]">VC Radar</p>
-            <p className="text-[10px] text-[#475569]">{vcCount} VCs · {companyCount} companies</p>
+            <p className="text-sm font-medium text-[#292524]">VC Radar</p>
+            <p className="text-[10px] text-[#A8A29E]">{vcCount} VCs · {companyCount.toLocaleString()} companies</p>
           </div>
         </div>
         <button
           onClick={() => setCollapsed(true)}
-          className="p-1.5 rounded-lg text-[#475569] hover:text-[#94A3B8] transition-colors"
+          className="p-1.5 rounded-lg text-[#A8A29E] hover:text-[#78716C] transition-colors"
         >
           <ChevronLeft className="w-4 h-4" />
         </button>
       </div>
 
       {/* Divider */}
-      <div className="mx-4 h-px" style={{ background: 'linear-gradient(to right, transparent, rgba(148,163,184,0.08), transparent)' }} />
+      <div className="mx-4 h-px" style={{ background: 'linear-gradient(to right, transparent, rgba(180,165,140,0.12), transparent)' }} />
 
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
         {messages.length === 0 ? (
-          /* Empty state — show quick actions */
-          <div className="space-y-4 pt-2">
-            <p className="text-xs text-[#475569] text-center">
-              Ask anything or use a slash command
-            </p>
-
-            {/* Quick action chips */}
-            <div className="flex flex-wrap gap-1.5">
-              {SLASH_ACTIONS.map(action => (
-                <button
-                  key={action.command}
-                  onClick={() => handleSelectAction(action)}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] text-[#94A3B8] hover:text-[#E2E8F0] transition-all"
-                  style={{
-                    background: 'rgba(15, 23, 42, 0.5)',
-                    border: '1px solid rgba(148, 163, 184, 0.06)',
-                  }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.borderColor = 'rgba(124, 143, 255, 0.15)'
-                    e.currentTarget.style.background = 'rgba(124, 143, 255, 0.06)'
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.borderColor = 'rgba(148, 163, 184, 0.06)'
-                    e.currentTarget.style.background = 'rgba(15, 23, 42, 0.5)'
-                  }}
-                >
-                  <span className="text-[#7C8FFF]">{action.icon}</span>
-                  <span>{action.label}</span>
-                </button>
-              ))}
+          /* Empty state — welcome + quick actions */
+          <div className="space-y-4 pt-0">
+            {/* Quick Stats */}
+            <div className="grid grid-cols-3 gap-2">
+              <div className="text-center py-2 rounded-xl" style={{ background: 'rgba(180, 83, 9, 0.05)' }}>
+                <div className="text-base font-bold text-[#B45309]">{vcCount}</div>
+                <div className="text-[9px] text-[#A8A29E] uppercase tracking-wider">VCs</div>
+              </div>
+              <div className="text-center py-2 rounded-xl" style={{ background: 'rgba(120, 113, 108, 0.05)' }}>
+                <div className="text-base font-bold text-[#57534E]">{companyCount.toLocaleString()}</div>
+                <div className="text-[9px] text-[#A8A29E] uppercase tracking-wider">Companies</div>
+              </div>
+              <div className="text-center py-2 rounded-xl" style={{ background: 'rgba(180, 165, 140, 0.06)' }}>
+                <div className="text-base font-bold text-[#78716C]">7</div>
+                <div className="text-[9px] text-[#A8A29E] uppercase tracking-wider">Sectors</div>
+              </div>
             </div>
 
             {/* Divider */}
-            <div className="h-px" style={{ background: 'linear-gradient(to right, transparent, rgba(148,163,184,0.06), transparent)' }} />
+            <div className="h-px" style={{ background: 'linear-gradient(to right, transparent, rgba(180,165,140,0.12), transparent)' }} />
 
-            {/* Filters (compact) */}
+            {/* Commands */}
             <div>
-              <p className="text-[10px] font-semibold text-[#475569] uppercase tracking-wider mb-2">Filters</p>
+              <p className="text-[10px] font-semibold text-[#A8A29E] uppercase tracking-wider mb-2">Quick Actions</p>
+              <div className="flex flex-wrap gap-1.5">
+                {SLASH_ACTIONS.map(action => (
+                  <button
+                    key={action.command}
+                    onClick={() => handleSelectAction(action)}
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[11px] text-[#78716C] hover:text-[#292524] transition-all hover:scale-[1.03]"
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.50)',
+                      border: '1px solid rgba(180, 165, 140, 0.12)',
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.borderColor = 'rgba(180, 83, 9, 0.20)'
+                      e.currentTarget.style.background = 'rgba(180, 83, 9, 0.06)'
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.borderColor = 'rgba(180, 165, 140, 0.12)'
+                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.50)'
+                    }}
+                  >
+                    <span className="text-[#B45309]">{action.icon}</span>
+                    <span>{action.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Divider */}
+            <div className="h-px" style={{ background: 'linear-gradient(to right, transparent, rgba(180,165,140,0.12), transparent)' }} />
+
+            {/* Filters */}
+            <div>
+              <p className="text-[10px] font-semibold text-[#A8A29E] uppercase tracking-wider mb-2">Filters</p>
               <div className="flex gap-2">
                 <button
                   onClick={() => onFiltersChange({ ...filters, showVCs: !filters.showVCs })}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-medium transition-all hover:scale-[1.02]"
                   style={{
-                    background: filters.showVCs ? 'rgba(124, 143, 255, 0.10)' : 'rgba(15, 23, 42, 0.4)',
-                    border: `1px solid ${filters.showVCs ? 'rgba(124, 143, 255, 0.20)' : 'rgba(148, 163, 184, 0.06)'}`,
-                    color: filters.showVCs ? '#A5B4FC' : '#475569',
+                    background: filters.showVCs ? 'rgba(180, 83, 9, 0.08)' : 'rgba(255, 255, 255, 0.40)',
+                    border: `1px solid ${filters.showVCs ? 'rgba(180, 83, 9, 0.18)' : 'rgba(180, 165, 140, 0.12)'}`,
+                    color: filters.showVCs ? '#B45309' : '#A8A29E',
                   }}
                 >
-                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: filters.showVCs ? '#7C8FFF' : '#334155' }} />
+                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: filters.showVCs ? '#B45309' : '#D6D3D1' }} />
                   VCs ({vcCount})
                 </button>
                 <button
                   onClick={() => onFiltersChange({ ...filters, showCompanies: !filters.showCompanies })}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-medium transition-all hover:scale-[1.02]"
                   style={{
-                    background: filters.showCompanies ? 'rgba(56, 189, 248, 0.10)' : 'rgba(15, 23, 42, 0.4)',
-                    border: `1px solid ${filters.showCompanies ? 'rgba(56, 189, 248, 0.20)' : 'rgba(148, 163, 184, 0.06)'}`,
-                    color: filters.showCompanies ? '#67E8F9' : '#475569',
+                    background: filters.showCompanies ? 'rgba(120, 113, 108, 0.08)' : 'rgba(255, 255, 255, 0.40)',
+                    border: `1px solid ${filters.showCompanies ? 'rgba(120, 113, 108, 0.18)' : 'rgba(180, 165, 140, 0.12)'}`,
+                    color: filters.showCompanies ? '#57534E' : '#A8A29E',
                   }}
                 >
-                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: filters.showCompanies ? '#38BDF8' : '#334155' }} />
-                  Companies ({companyCount})
+                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: filters.showCompanies ? '#78716C' : '#D6D3D1' }} />
+                  Companies ({companyCount.toLocaleString()})
                 </button>
               </div>
             </div>
 
-            {/* Hint */}
-            <p className="text-[10px] text-[#1E293B] text-center pt-4">
-              Type <span className="text-[#475569]">/</span> to see all commands
-            </p>
+            {/* Divider */}
+            <div className="h-px" style={{ background: 'linear-gradient(to right, transparent, rgba(180,165,140,0.12), transparent)' }} />
+
+            {/* Tips */}
+            <div>
+              <p className="text-[10px] font-semibold text-[#A8A29E] uppercase tracking-wider mb-2">Tips</p>
+              <div className="space-y-2">
+                <div className="flex items-start gap-2.5 text-[11px] text-[#78716C]">
+                  <span className="text-[#B45309] mt-0.5">&#9679;</span>
+                  <span>Click any node to see details and connections</span>
+                </div>
+                <div className="flex items-start gap-2.5 text-[11px] text-[#78716C]">
+                  <span className="text-[#B45309] mt-0.5">&#9679;</span>
+                  <span>Hover to highlight a VC&apos;s portfolio network</span>
+                </div>
+                <div className="flex items-start gap-2.5 text-[11px] text-[#78716C]">
+                  <span className="text-[#B45309] mt-0.5">&#9679;</span>
+                  <span>Drag to rotate, scroll to zoom, right-click to pan</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Keyboard hint */}
+            <div className="text-center pt-3">
+              <p className="text-[10px] text-[#A8A29E]">
+                Type <kbd className="px-1.5 py-0.5 rounded text-[9px] font-mono text-[#78716C]" style={{ background: 'rgba(180, 165, 140, 0.10)', border: '1px solid rgba(180, 165, 140, 0.12)' }}>/</kbd> to see all commands
+              </p>
+            </div>
           </div>
         ) : (
           /* Message bubbles */
@@ -519,8 +557,8 @@ export function ChatPanel({
                 {msg.role === 'user' ? (
                   <div className="flex justify-end">
                     <div
-                      className="max-w-[85%] px-3 py-2 rounded-2xl rounded-tr-md text-sm text-[#E2E8F0]"
-                      style={{ background: 'rgba(124, 143, 255, 0.15)', border: '1px solid rgba(124, 143, 255, 0.10)' }}
+                      className="max-w-[85%] px-3 py-2 rounded-2xl rounded-tr-md text-sm text-[#292524]"
+                      style={{ background: 'rgba(180, 83, 9, 0.08)', border: '1px solid rgba(180, 83, 9, 0.12)' }}
                     >
                       {msg.content}
                     </div>
@@ -529,8 +567,8 @@ export function ChatPanel({
                   <div className="flex justify-start">
                     <div className="max-w-[90%]">
                       <div
-                        className="px-3 py-2 rounded-2xl rounded-tl-md text-sm text-[#C8D1E0] whitespace-pre-line"
-                        style={{ background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(148, 163, 184, 0.06)' }}
+                        className="px-3 py-2 rounded-2xl rounded-tl-md text-sm text-[#57534E] whitespace-pre-line"
+                        style={{ background: 'rgba(255, 255, 255, 0.50)', border: '1px solid rgba(180, 165, 140, 0.12)' }}
                       >
                         {i === messages.length - 1 && msg.role === 'assistant' ? (
                           <TypewriterText text={msg.content} />
@@ -547,14 +585,14 @@ export function ChatPanel({
                               onClick={() => onNavigateToNode(node.id)}
                               className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] hover:brightness-125 transition-all"
                               style={{
-                                background: node.type === 'vc' ? 'rgba(124, 143, 255, 0.10)' : 'rgba(56, 189, 248, 0.10)',
-                                border: `1px solid ${node.type === 'vc' ? 'rgba(124, 143, 255, 0.15)' : 'rgba(56, 189, 248, 0.15)'}`,
-                                color: node.type === 'vc' ? '#A5B4FC' : '#67E8F9',
+                                background: node.type === 'vc' ? 'rgba(180, 83, 9, 0.08)' : 'rgba(120, 113, 108, 0.08)',
+                                border: `1px solid ${node.type === 'vc' ? 'rgba(180, 83, 9, 0.15)' : 'rgba(120, 113, 108, 0.15)'}`,
+                                color: node.type === 'vc' ? '#B45309' : '#57534E',
                               }}
                             >
                               <span
                                 className="w-1.5 h-1.5 rounded-full"
-                                style={{ backgroundColor: node.type === 'vc' ? '#7C8FFF' : '#38BDF8' }}
+                                style={{ backgroundColor: node.type === 'vc' ? '#B45309' : '#78716C' }}
                               />
                               {node.name}
                             </button>
@@ -572,12 +610,12 @@ export function ChatPanel({
               <div className="flex justify-start">
                 <div
                   className="px-3 py-2.5 rounded-2xl rounded-tl-md"
-                  style={{ background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(148, 163, 184, 0.06)' }}
+                  style={{ background: 'rgba(255, 255, 255, 0.50)', border: '1px solid rgba(180, 165, 140, 0.12)' }}
                 >
                   <div className="flex gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#7C8FFF] animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#7C8FFF] animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#7C8FFF] animate-bounce" style={{ animationDelay: '300ms' }} />
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#B45309] animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#B45309] animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#B45309] animate-bounce" style={{ animationDelay: '300ms' }} />
                   </div>
                 </div>
               </div>
@@ -596,9 +634,10 @@ export function ChatPanel({
             transition={{ duration: 0.15 }}
             className="mx-4 mb-2 rounded-xl overflow-hidden"
             style={{
-              background: 'rgba(15, 23, 42, 0.92)',
-              border: '1px solid rgba(148, 163, 184, 0.08)',
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+              background: 'rgba(255, 255, 255, 0.85)',
+              border: '1px solid rgba(180, 165, 140, 0.15)',
+              boxShadow: '0 8px 32px rgba(180, 165, 140, 0.15)',
+              backdropFilter: 'blur(20px)',
             }}
           >
             <div className="p-1.5 max-h-[200px] overflow-y-auto">
@@ -606,13 +645,13 @@ export function ChatPanel({
                 <button
                   key={action.command}
                   onClick={() => handleSelectAction(action)}
-                  className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-white/[0.04] transition-colors text-left"
+                  className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-black/[0.03] transition-colors text-left"
                 >
-                  <span className="text-[#7C8FFF]">{action.icon}</span>
+                  <span className="text-[#B45309]">{action.icon}</span>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-[#E2E8F0]">{action.command}</span>
-                      <span className="text-[10px] text-[#475569]">{action.description}</span>
+                      <span className="text-sm font-medium text-[#292524]">{action.command}</span>
+                      <span className="text-[10px] text-[#A8A29E]">{action.description}</span>
                     </div>
                   </div>
                 </button>
@@ -627,8 +666,8 @@ export function ChatPanel({
         <div
           className="flex items-center gap-2 px-3 py-2 rounded-xl transition-all"
           style={{
-            background: 'rgba(15, 23, 42, 0.5)',
-            border: '1px solid rgba(148, 163, 184, 0.06)',
+            background: 'rgba(255, 255, 255, 0.40)',
+            border: '1px solid rgba(180, 165, 140, 0.12)',
           }}
         >
           <input
@@ -640,25 +679,25 @@ export function ChatPanel({
             onKeyDown={handleKeyDown}
             onFocus={e => {
               const parent = e.target.parentElement!
-              parent.style.boxShadow = '0 0 0 3px rgba(124, 143, 255, 0.12), 0 0 16px rgba(124, 143, 255, 0.08)'
-              parent.style.borderColor = 'rgba(124, 143, 255, 0.2)'
+              parent.style.boxShadow = '0 0 0 3px rgba(180, 83, 9, 0.08), 0 0 16px rgba(180, 83, 9, 0.05)'
+              parent.style.borderColor = 'rgba(180, 83, 9, 0.18)'
             }}
             onBlur={e => {
               const parent = e.target.parentElement!
               parent.style.boxShadow = 'none'
-              parent.style.borderColor = 'rgba(148, 163, 184, 0.06)'
+              parent.style.borderColor = 'rgba(180, 165, 140, 0.12)'
             }}
-            className="flex-1 bg-transparent text-sm text-[#E2E8F0] placeholder:text-[#334155] focus:outline-none"
+            className="flex-1 bg-transparent text-sm text-[#292524] placeholder:text-[#A8A29E] focus:outline-none"
           />
           <button
             onClick={handleSubmit}
             disabled={!inputValue.trim() || isTyping}
             className="p-1.5 rounded-lg transition-all disabled:opacity-20"
             style={{
-              background: inputValue.trim() ? 'rgba(124, 143, 255, 0.15)' : 'transparent',
+              background: inputValue.trim() ? 'rgba(180, 83, 9, 0.10)' : 'transparent',
             }}
           >
-            <Send className="w-3.5 h-3.5 text-[#7C8FFF]" />
+            <Send className="w-3.5 h-3.5 text-[#B45309]" />
           </button>
         </div>
       </div>

@@ -11,8 +11,8 @@ export function Footer() {
           {/* Brand */}
           <div className="col-span-1">
             <div className="flex items-center gap-2 mb-3">
-              <div className="w-7 h-7 rounded-lg bg-indigo/20 flex items-center justify-center">
-                <Compass className="w-3.5 h-3.5 text-indigo-light" />
+              <div className="w-7 h-7 rounded-lg bg-accent/20 flex items-center justify-center">
+                <Compass className="w-3.5 h-3.5 text-accent" />
               </div>
               <span className="text-base font-bold text-text-primary">VC Radar</span>
             </div>

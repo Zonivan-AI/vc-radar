@@ -7,32 +7,32 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // VC Radar Design System
-        background: '#060A14',
+        // VC Radar — Meridian Design System (warm ivory / cartographer)
+        background: '#FBF9F4',
         surface: {
-          DEFAULT: '#0F172B',
-          raised: '#1A2235',
+          DEFAULT: '#FFFFFF',
+          raised: '#F5F0E8',
         },
-        border: '#1E293B',
-        // Primary accent — periwinkle blue
+        border: '#E7E5E4',
+        // Primary accent — amber
         accent: {
-          DEFAULT: '#7C8FFF',
-          light: '#A5B4FC',
-          dark: '#6366F1',
-          glow: 'rgba(124, 143, 255, 0.20)',
+          DEFAULT: '#B45309',
+          light: '#D97706',
+          dark: '#92400E',
+          glow: 'rgba(180, 83, 9, 0.15)',
         },
         // Node colors
         node: {
-          vc: '#7C8FFF',
-          company: '#38BDF8',
-          'company-hover': '#67E8F9',
-          'vc-hover': '#A5B4FC',
+          vc: '#B45309',
+          company: '#78716C',
+          'company-hover': '#57534E',
+          'vc-hover': '#D97706',
         },
         // Legacy accent colors (for dashboard pages)
         indigo: {
-          DEFAULT: '#6366F1',
-          light: '#818CF8',
-          dark: '#4F46E5',
+          DEFAULT: '#B45309',
+          light: '#D97706',
+          dark: '#92400E',
         },
         emerald: {
           DEFAULT: '#10B981',
@@ -46,14 +46,14 @@ const config: Config = {
           DEFAULT: '#F43F5E',
           light: '#FB7185',
         },
-        // Text — warmer slate tones
-        'text-primary': '#E2E8F0',
-        'text-secondary': '#94A3B8',
-        'text-muted': '#475569',
+        // Text — warm stone tones
+        'text-primary': '#292524',
+        'text-secondary': '#78716C',
+        'text-muted': '#A8A29E',
         // Glass panel
         glass: {
-          bg: 'rgba(15, 23, 42, 0.75)',
-          border: 'rgba(148, 163, 184, 0.08)',
+          bg: 'rgba(255, 255, 255, 0.45)',
+          border: 'rgba(180, 165, 140, 0.12)',
         },
         // Chart palette (for dashboard pages)
         chart: {
@@ -68,21 +68,21 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
-        mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
+        sans: ['DM Sans', 'system-ui', '-apple-system', 'sans-serif'],
+        mono: ['IBM Plex Mono', 'Fira Code', 'monospace'],
       },
       backgroundImage: {
-        'glass': 'linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)',
-        'glass-hover': 'linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.04) 100%)',
+        'glass': 'linear-gradient(135deg, rgba(255,255,255,0.50) 0%, rgba(255,255,255,0.30) 100%)',
+        'glass-hover': 'linear-gradient(135deg, rgba(255,255,255,0.60) 0%, rgba(255,255,255,0.40) 100%)',
         'gradient-radial': 'radial-gradient(ellipse at center, var(--tw-gradient-stops))',
       },
       boxShadow: {
-        'glass': '0 8px 32px rgba(0, 0, 0, 0.4), inset 0 0 0 1px rgba(148, 163, 184, 0.05)',
-        'glass-strong': '0 12px 48px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(148, 163, 184, 0.06)',
-        'glow-accent': '0 0 24px rgba(124, 143, 255, 0.15)',
-        'glow-indigo': '0 0 20px rgba(99, 102, 241, 0.15)',
+        'glass': '0 8px 32px rgba(180, 165, 140, 0.10), inset 0 0 0 1px rgba(180, 165, 140, 0.06)',
+        'glass-strong': '0 12px 48px rgba(180, 165, 140, 0.14), inset 0 0 0 1px rgba(180, 165, 140, 0.08)',
+        'glow-accent': '0 0 24px rgba(180, 83, 9, 0.15)',
+        'glow-indigo': '0 0 20px rgba(180, 83, 9, 0.12)',
         'glow-emerald': '0 0 20px rgba(16, 185, 129, 0.15)',
-        'input-focus': '0 0 0 3px rgba(124, 143, 255, 0.12), 0 0 16px rgba(124, 143, 255, 0.08)',
+        'input-focus': '0 0 0 3px rgba(180, 83, 9, 0.10), 0 0 16px rgba(180, 83, 9, 0.06)',
       },
       animation: {
         'fade-in': 'fadeIn 0.3s ease-out',

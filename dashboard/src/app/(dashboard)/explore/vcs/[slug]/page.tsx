@@ -41,8 +41,8 @@ export default function VCDeepDivePage({ params }: { params: Promise<{ slug: str
       <div className="glass-card p-6 mb-6">
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-xl bg-indigo/10 flex items-center justify-center">
-              <Building2 className="w-7 h-7 text-indigo-light" />
+            <div className="w-14 h-14 rounded-xl bg-accent/10 flex items-center justify-center">
+              <Building2 className="w-7 h-7 text-accent" />
             </div>
             <div>
               <h1 className="text-2xl font-bold text-text-primary">{firm.name}</h1>
@@ -88,7 +88,7 @@ export default function VCDeepDivePage({ params }: { params: Promise<{ slug: str
         {firm.fund_stage.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mt-4">
             {firm.fund_stage.map(s => (
-              <Badge key={s} variant="indigo">{s}</Badge>
+              <Badge key={s} variant="accent">{s}</Badge>
             ))}
             {firm.focus_sectors.map(s => (
               <Badge key={s}>{s}</Badge>
@@ -118,10 +118,10 @@ export default function VCDeepDivePage({ params }: { params: Promise<{ slug: str
               <Link
                 key={company.id}
                 href={`/explore/companies/${company.slug}`}
-                className="p-4 rounded-lg border border-border/50 hover:border-indigo/30 hover:bg-white/[0.02] transition-all group"
+                className="p-4 rounded-lg border border-border/50 hover:border-accent/30 hover:bg-white/[0.02] transition-all group"
               >
                 <div className="flex items-start justify-between mb-2">
-                  <h3 className="font-medium text-text-primary group-hover:text-indigo-light transition-colors">
+                  <h3 className="font-medium text-text-primary group-hover:text-accent transition-colors">
                     {company.name}
                   </h3>
                   <StatusBadge status={company.status} />
@@ -130,7 +130,7 @@ export default function VCDeepDivePage({ params }: { params: Promise<{ slug: str
                 <div className="flex items-center gap-3 text-xs text-text-muted">
                   {company.city && <span>{company.city}</span>}
                   {company.founded_year && <span>Est. {company.founded_year}</span>}
-                  {company.stage && <Badge variant="indigo">{company.stage}</Badge>}
+                  {company.stage && <Badge variant="accent">{company.stage}</Badge>}
                 </div>
                 {founder && (
                   <div className="mt-3 pt-3 border-t border-border/30 text-xs">

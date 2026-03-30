@@ -13,8 +13,8 @@ interface AgeHistogramProps {
 }
 
 const GRADIENT_COLORS = [
-  '#818CF8', '#7C83F7', '#6E78F5', '#636CF3',
-  '#5B63F1', '#535AEF', '#4B51ED', '#4348EB',
+  '#D97706', '#CA6F06', '#B45309', '#A34A08',
+  '#924107', '#813806', '#703005', '#5F2804',
 ]
 
 function CustomTooltip({ active, payload }: { active?: boolean; payload?: Array<{ payload: AgeBucket }> }) {

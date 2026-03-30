@@ -31,7 +31,7 @@ export function getStatusColor(status: string): string {
   switch (status) {
     case 'Active': return 'text-emerald bg-emerald/10'
     case 'Acquired': return 'text-amber bg-amber/10'
-    case 'IPO': return 'text-indigo bg-indigo/10'
+    case 'IPO': return 'text-accent bg-accent/10'
     case 'Shutdown': return 'text-rose bg-rose/10'
     default: return 'text-text-secondary bg-white/5'
   }
@@ -48,7 +48,7 @@ export function getConfidenceColor(confidence: string): string {
 
 export function getSectorColor(sector: string): string {
   const sectorLower = sector.toLowerCase()
-  if (sectorLower.includes('infra') || sectorLower.includes('cloud')) return '#6366F1'
+  if (sectorLower.includes('infra') || sectorLower.includes('cloud')) return '#D97706'
   if (sectorLower.includes('security') || sectorLower.includes('cyber')) return '#F59E0B'
   if (sectorLower.includes('health') || sectorLower.includes('bio')) return '#EC4899'
   if (sectorLower.includes('fintech') || sectorLower.includes('finance')) return '#3B82F6'
@@ -59,7 +59,7 @@ export function getSectorColor(sector: string): string {
 }
 
 export const SECTOR_COLORS: Record<string, string> = {
-  'AI Infra': '#6366F1',
+  'AI Infra': '#D97706',
   'AI Apps': '#10B981',
   'Security': '#F59E0B',
   'Healthcare': '#EC4899',
@@ -70,6 +70,6 @@ export const SECTOR_COLORS: Record<string, string> = {
 }
 
 export const CHART_COLORS = [
-  '#6366F1', '#10B981', '#F59E0B', '#EC4899',
+  '#D97706', '#10B981', '#F59E0B', '#EC4899',
   '#3B82F6', '#8B5CF6', '#14B8A6', '#F97316',
 ]

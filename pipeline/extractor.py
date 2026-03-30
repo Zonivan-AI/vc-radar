@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 PROMPTS_PATH = Path(__file__).resolve().parent.parent / "config" / "prompts.yaml"
-MAX_HTML_CHARS = 180_000
+MAX_HTML_CHARS = 20_000  # 20K chars (~7K tokens) — safe limit for Gemma 12B local inference
 MAX_OUTPUT_TOKENS = 8192
 
 # OpenRouter API
@@ -165,10 +165,10 @@ MODEL_REGISTRY = {
 # Strategy: all local — free, runs on LM Studio, no API costs
 # Set USE_CLOUD_ENRICHMENT=true to use DeepSeek cloud for founder extraction (faster, ~$0.001/founder)
 DEFAULT_MODELS = {
-    "portfolio_extraction": "local/gemma-3-12b",           # HTML → companies JSON (free, local, ~2min)
+    "portfolio_extraction": "local/gemma-3-12b",            # HTML → companies JSON (free, local, 80K context)
     "founder_extraction": (
         "deepseek/deepseek-chat" if USE_CLOUD_ENRICHMENT
-        else "local/gemma-3-12b"                           # search text → founder JSON (free, local, ~90s)
+        else "local/gemma-3-12b"                           # search text → founder JSON (free, local)
     ),
     "fallback": "deepseek/deepseek-chat",                  # if local model fails, use cheap cloud
 }
@@ -294,7 +294,7 @@ class LLMClient:
 
     async def _get_client(self) -> httpx.AsyncClient:
         if self._http_client is None or self._http_client.is_closed:
-            self._http_client = httpx.AsyncClient(timeout=httpx.Timeout(120.0))
+            self._http_client = httpx.AsyncClient(timeout=httpx.Timeout(300.0))
         return self._http_client
 
     async def close(self) -> None:
@@ -338,16 +338,11 @@ class LLMClient:
     async def _call_local(
         self, model_id: str, system: str, user: str, max_tokens: int
     ) -> tuple[str, int, int]:
-        """Call local LM Studio's OpenAI-compatible API (free).
-
-        Uses sync httpx in a thread executor to avoid asyncio event loop
-        conflicts with Playwright's browser keepalive connections.
-        """
-        import asyncio
-        import concurrent.futures
-
-        def _sync_call() -> dict:
-            response = httpx.post(
+        """Call local LM Studio's OpenAI-compatible API (free)."""
+        async with httpx.AsyncClient(
+            timeout=httpx.Timeout(600.0, connect=30.0, read=600.0, write=60.0)
+        ) as client:
+            response = await client.post(
                 LMSTUDIO_API_URL,
                 headers={"Content-Type": "application/json"},
                 json={
@@ -359,14 +354,9 @@ class LLMClient:
                         {"role": "user", "content": user},
                     ],
                 },
-                timeout=600.0,  # 10 min — local models are slow but free
             )
             response.raise_for_status()
-            return response.json()
-
-        loop = asyncio.get_event_loop()
-        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-            data = await loop.run_in_executor(pool, _sync_call)
+            data = response.json()
 
         text = data["choices"][0]["message"].get("content", "")
         # GLM reasoning models wrap output in <|begin_of_box|>...<|end_of_box|> tags
@@ -409,6 +399,11 @@ class LLMClient:
         )
         response.raise_for_status()
         data = response.json()
+
+        # Handle error responses from OpenRouter (no 'choices' key)
+        if "choices" not in data:
+            error_msg = data.get("error", {}).get("message", str(data))
+            raise RuntimeError(f"OpenRouter error: {error_msg}")
 
         text = data["choices"][0]["message"]["content"]
         usage = data.get("usage", {})
@@ -638,18 +633,29 @@ class DataExtractor:
         for tag in soup.find_all(["img", "figure", "picture", "video", "audio", "canvas"]):
             tag.decompose()
 
+        # Remove cookie consent banners and modals (use precise patterns to avoid nuking content)
+        for tag in soup.find_all(attrs={"id": re.compile(
+            r"^(cookie-?consent|cookie-?banner|gdpr|onetrust)",
+            re.IGNORECASE,
+        )}):
+            tag.decompose()
+
         # Convert to markdown
         markdown = md(
             str(soup),
             strip=["img", "figure", "picture", "video", "audio", "canvas"],
         )
 
-        # Clean up excessive whitespace
+        # Clean up excessive whitespace and blank lines
         markdown = re.sub(r"\n{3,}", "\n\n", markdown)
         markdown = re.sub(r" {2,}", " ", markdown)
+        # Remove lines that are just links with no context (common in nav remnants)
+        markdown = re.sub(r"^\[?\s*\]\([^)]*\)\s*$", "", markdown, flags=re.MULTILINE)
+        # Remove lines that are just special characters or very short
+        markdown = re.sub(r"^[|\-\*_=]{1,3}\s*$", "", markdown, flags=re.MULTILINE)
+        markdown = re.sub(r"\n{3,}", "\n\n", markdown)
         markdown = markdown.strip()
 
-        # Safety truncation (should rarely trigger with markdown)
         if len(markdown) > max_chars:
             logger.warning(
                 "Markdown still large (%d chars), truncating to %d",
@@ -699,9 +705,13 @@ class DataExtractor:
         # Unwrap common wrapper patterns
         if isinstance(parsed, dict) and expected_type is list:
             # Check for {"companies": [...]} or {"results": [...]} patterns
-            for key in ("companies", "results", "data", "portfolio", "items"):
+            for key in ("companies", "portfolio_companies", "results", "data", "portfolio", "items"):
                 if key in parsed and isinstance(parsed[key], list):
                     return parsed[key]
+            # Try first list value found in the dict
+            for val in parsed.values():
+                if isinstance(val, list):
+                    return val
             # Single object → wrap in list
             return [parsed]
 
