@@ -67,39 +67,38 @@ export function buildGraphData(
   }
 
   // Compute co-investor links (VC↔VC based on shared portfolio companies)
-  const vcPortfolios = new Map<string, Set<string>>()
+  // Use company→VCs reverse index for O(companies * avgVCsPerCompany²) instead of O(VCs²)
+  const companyToVCs = new Map<string, string[]>()
   for (const inv of investments) {
-    if (!nodeIds.has(inv.vc_id)) continue
-    if (!vcPortfolios.has(inv.vc_id)) vcPortfolios.set(inv.vc_id, new Set())
-    vcPortfolios.get(inv.vc_id)!.add(inv.company_id)
+    if (!nodeIds.has(inv.vc_id) || !nodeIds.has(inv.company_id)) continue
+    if (!companyToVCs.has(inv.company_id)) companyToVCs.set(inv.company_id, [])
+    companyToVCs.get(inv.company_id)!.push(inv.vc_id)
   }
 
-  const vcIds = vcs.map(v => v.id).filter(id => nodeIds.has(id))
+  const pairCounts = new Map<string, number>()
   let maxShared = 1
-  const coInvestorPairs: { a: string; b: string; count: number }[] = []
-
-  for (let i = 0; i < vcIds.length; i++) {
-    for (let j = i + 1; j < vcIds.length; j++) {
-      const portA = vcPortfolios.get(vcIds[i])
-      const portB = vcPortfolios.get(vcIds[j])
-      if (!portA || !portB) continue
-      let shared = 0
-      for (const compId of portA) {
-        if (portB.has(compId)) shared++
-      }
-      if (shared > 0) {
-        coInvestorPairs.push({ a: vcIds[i], b: vcIds[j], count: shared })
-        maxShared = Math.max(maxShared, shared)
+  for (const [, vcList] of companyToVCs) {
+    if (vcList.length < 2) continue
+    for (let i = 0; i < vcList.length; i++) {
+      for (let j = i + 1; j < vcList.length; j++) {
+        const key = vcList[i] < vcList[j] ? `${vcList[i]}|${vcList[j]}` : `${vcList[j]}|${vcList[i]}`
+        const count = (pairCounts.get(key) || 0) + 1
+        pairCounts.set(key, count)
+        maxShared = Math.max(maxShared, count)
       }
     }
   }
 
-  for (const pair of coInvestorPairs) {
+  // On large graphs, only keep significant co-investor links (2+ shared companies)
+  const minShared = nodes.length > 3000 ? 3 : nodes.length > 1000 ? 2 : 1
+  for (const [key, count] of pairCounts) {
+    if (count < minShared) continue
+    const [a, b] = key.split('|')
     links.push({
-      source: pair.a,
-      target: pair.b,
+      source: a,
+      target: b,
       type: 'co-investor',
-      strength: pair.count / maxShared,
+      strength: count / maxShared,
     })
   }
 

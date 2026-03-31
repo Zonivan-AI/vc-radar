@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic'
 import * as THREE from 'three'
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js'
 import type { GraphNode, GraphLink, GraphData, GraphFilters } from '@/lib/graph-types'
-import { FORCE_CONFIG } from '@/lib/graph-forces'
+import { getForceConfig } from '@/lib/graph-forces'
 import { VC_GRADIENT } from '@/lib/graph-colors'
 
 const ForceGraph3D = dynamic(() => import('react-force-graph-3d'), { ssr: false })
@@ -135,6 +135,10 @@ function getCachedRingTexture(color: string) {
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
+// Performance thresholds
+const LARGE_GRAPH_THRESHOLD = 1000   // nodes above this = reduce visual fidelity
+const HUGE_GRAPH_THRESHOLD = 3000    // nodes above this = minimal effects
+
 export function GraphCanvas({
   graphData,
   filters,
@@ -152,6 +156,14 @@ export function GraphCanvas({
   const startTimeRef = useRef(performance.now())
   const autoOrbitRef = useRef({ enabled: true, angle: 0, speed: 0.03 })
   const initialRevealDoneRef = useRef(false)
+
+  // Determine performance tier based on node count
+  const perfTier = useMemo(() => {
+    const count = graphData.nodes.length
+    if (count > HUGE_GRAPH_THRESHOLD) return 'minimal'
+    if (count > LARGE_GRAPH_THRESHOLD) return 'reduced'
+    return 'full'
+  }, [graphData.nodes.length])
 
   useEffect(() => {
     const update = () => {
@@ -223,43 +235,54 @@ export function GraphCanvas({
     )
   }, [graphData])
 
-  // Compute highlight sets for hover
-  const highlightNodes = useMemo(() => {
-    if (!hoveredNode) return new Set<string>()
-    const set = new Set<string>([hoveredNode.id])
+  // Pre-compute adjacency index for fast hover lookups (avoids iterating all links)
+  const adjacencyIndex = useMemo(() => {
+    const neighbors = new Map<string, Set<string>>()
+    const linkKeys = new Map<string, Set<string>>()
     for (const link of graphData.links) {
       const sourceId = typeof link.source === 'object' ? (link.source as any).id : link.source
       const targetId = typeof link.target === 'object' ? (link.target as any).id : link.target
-      if (sourceId === hoveredNode.id) set.add(targetId)
-      if (targetId === hoveredNode.id) set.add(sourceId)
+      if (!neighbors.has(sourceId)) neighbors.set(sourceId, new Set())
+      if (!neighbors.has(targetId)) neighbors.set(targetId, new Set())
+      neighbors.get(sourceId)!.add(targetId)
+      neighbors.get(targetId)!.add(sourceId)
+      const key = `${sourceId}-${targetId}`
+      if (!linkKeys.has(sourceId)) linkKeys.set(sourceId, new Set())
+      if (!linkKeys.has(targetId)) linkKeys.set(targetId, new Set())
+      linkKeys.get(sourceId)!.add(key)
+      linkKeys.get(targetId)!.add(key)
     }
+    return { neighbors, linkKeys }
+  }, [graphData.links])
+
+  // Compute highlight sets for hover — O(degree) instead of O(links)
+  const highlightNodes = useMemo(() => {
+    if (!hoveredNode) return new Set<string>()
+    const neighborSet = adjacencyIndex.neighbors.get(hoveredNode.id)
+    const set = new Set<string>([hoveredNode.id])
+    if (neighborSet) neighborSet.forEach(id => set.add(id))
     return set
-  }, [hoveredNode, graphData.links])
+  }, [hoveredNode, adjacencyIndex])
 
   const highlightLinks = useMemo(() => {
     if (!hoveredNode) return new Set<string>()
-    const set = new Set<string>()
-    for (const link of graphData.links) {
-      const sourceId = typeof link.source === 'object' ? (link.source as any).id : link.source
-      const targetId = typeof link.target === 'object' ? (link.target as any).id : link.target
-      if (sourceId === hoveredNode.id || targetId === hoveredNode.id) {
-        set.add(`${sourceId}-${targetId}`)
-      }
-    }
-    return set
-  }, [hoveredNode, graphData.links])
+    return adjacencyIndex.linkKeys.get(hoveredNode.id) || new Set<string>()
+  }, [hoveredNode, adjacencyIndex])
+
+  // Dynamic force config based on graph size
+  const forceConfig = useMemo(() => getForceConfig(graphData.nodes.length), [graphData.nodes.length])
 
   // Configure forces after mount
   useEffect(() => {
     if (!graphRef.current) return
     const fg = graphRef.current
 
-    fg.d3Force('charge')?.strength((node: GraphNode) => FORCE_CONFIG.charge.strength(node))
-    fg.d3Force('charge')?.distanceMax(FORCE_CONFIG.charge.distanceMax)
-    fg.d3Force('link')?.distance((link: GraphLink) => FORCE_CONFIG.link.distance(link))
-    fg.d3Force('link')?.strength((link: GraphLink) => FORCE_CONFIG.link.strength(link))
-    fg.d3Force('center')?.strength(FORCE_CONFIG.center.strength)
-  }, [graphRef, filteredData])
+    fg.d3Force('charge')?.strength((node: GraphNode) => forceConfig.charge.strength(node))
+    fg.d3Force('charge')?.distanceMax(forceConfig.charge.distanceMax)
+    fg.d3Force('link')?.distance((link: GraphLink) => forceConfig.link.distance(link))
+    fg.d3Force('link')?.strength((link: GraphLink) => forceConfig.link.strength(link))
+    fg.d3Force('center')?.strength(forceConfig.center.strength)
+  }, [graphRef, filteredData, forceConfig])
 
   // ─── Scene setup: fog, bloom, tone mapping, lights ──────────────────────────
   useEffect(() => {
@@ -270,6 +293,10 @@ export function GraphCanvas({
     if (renderer) {
       renderer.toneMapping = THREE.ACESFilmicToneMapping
       renderer.toneMappingExposure = 1.1
+      // Cap pixel ratio on large graphs to reduce fill rate
+      if (perfTier !== 'full') {
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5))
+      }
     }
 
     if (scene) {
@@ -297,24 +324,29 @@ export function GraphCanvas({
       }
     }
 
-    // ─── UnrealBloomPass (warm bloom) ─────────────────────────────────
-    try {
-      const composer = graphRef.current.postProcessingComposer()
-      if (composer && !bloomPassRef.current) {
-        const bloomPass = new UnrealBloomPass(
-          new THREE.Vector2(dimensions.width, dimensions.height),
-          0.6,   // strength — subtle warm glow, not overblown
-          0.8,   // radius — wide soft spread
-          0.7,   // threshold — only bright nodes bloom
-        )
-        composer.addPass(bloomPass)
-        bloomPassRef.current = bloomPass
+    // ─── UnrealBloomPass (warm bloom) — skip on minimal perf tier ─────
+    if (perfTier !== 'minimal') {
+      try {
+        const composer = graphRef.current.postProcessingComposer()
+        if (composer && !bloomPassRef.current) {
+          // Use half-resolution bloom on reduced tier
+          const bloomRes = perfTier === 'reduced'
+            ? new THREE.Vector2(dimensions.width / 2, dimensions.height / 2)
+            : new THREE.Vector2(dimensions.width, dimensions.height)
+          const bloomPass = new UnrealBloomPass(
+            bloomRes,
+            perfTier === 'reduced' ? 0.4 : 0.6,  // lower strength on reduced
+            0.8,   // radius
+            0.7,   // threshold
+          )
+          composer.addPass(bloomPass)
+          bloomPassRef.current = bloomPass
+        }
+      } catch (e) {
+        console.warn('Bloom setup deferred:', e)
       }
-    } catch (e) {
-      // postProcessingComposer may not be available immediately
-      console.warn('Bloom setup deferred:', e)
     }
-  }, [graphRef, dimensions])
+  }, [graphRef, dimensions, perfTier])
 
   // ─── Cinematic idle auto-orbit ──────────────────────────────────────────────
   useEffect(() => {
@@ -328,8 +360,9 @@ export function GraphCanvas({
 
       const elapsed = (performance.now() - startTimeRef.current) / 1000
 
-      // Gentle pulse on ring sprites
+      // Gentle pulse on ring sprites — only iterate VC nodes that have rings
       nodeObjectsRef.current.forEach((group) => {
+        if ((group as any).__nodeType !== 'vc') return
         const ring = group.getObjectByName('ring') as THREE.Sprite | undefined
         if (ring) {
           const pulse = 1 + Math.sin(elapsed * 1.5 + (group as any).__phaseOffset) * 0.15
@@ -381,6 +414,12 @@ export function GraphCanvas({
     }
   }, [onEngineStop, graphRef])
 
+  // ─── Shared geometry pools (reuse across nodes to reduce GPU memory) ─────
+  const geometryPool = useMemo(() => ({
+    vcSphere: new THREE.SphereGeometry(1, 16, 16),      // unit sphere, scaled per-node
+    companySphere: new THREE.SphereGeometry(1, 8, 8),    // lower poly for companies
+  }), [])
+
   // ─── Node creation (called once per node) ───────────────────────────────
   const nodeThreeObject = useCallback((node: any) => {
     const n = node as GraphNode
@@ -391,8 +430,8 @@ export function GraphCanvas({
 
     const radius = n.type === 'vc' ? n.size * 0.55 : n.size * 0.4
 
-    // Core sphere — upgraded to MeshStandardMaterial for metallic sheen
-    const geometry = new THREE.SphereGeometry(radius, 32, 32) // Higher poly count (was 24)
+    // Core sphere — reuse shared geometry, scale via mesh
+    const geometry = n.type === 'vc' ? geometryPool.vcSphere : geometryPool.companySphere
     const material = new THREE.MeshStandardMaterial({
       color: new THREE.Color(n.color),
       emissive: new THREE.Color(n.color),
@@ -404,25 +443,29 @@ export function GraphCanvas({
     })
     const sphere = new THREE.Mesh(geometry, material)
     sphere.name = 'core'
+    sphere.scale.setScalar(radius)
     group.add(sphere)
 
-    // Glow sprite — warmer, softer
-    const glowTex = getCachedGlowTexture(n.glowColor || n.color)
-    const glowMat = new THREE.SpriteMaterial({
-      map: glowTex,
-      transparent: true,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-      opacity: n.type === 'vc' ? 0.7 : 0.5,
-    })
-    const glow = new THREE.Sprite(glowMat.clone())
-    glow.name = 'glow'
-    const glowScale = n.type === 'vc' ? radius * 6 : radius * 4.5
-    glow.scale.set(glowScale, glowScale, 1)
-    group.add(glow)
+    // Glow sprite — skip for companies on huge graphs
+    const showGlow = n.type === 'vc' || perfTier !== 'minimal'
+    if (showGlow) {
+      const glowTex = getCachedGlowTexture(n.glowColor || n.color)
+      const glowMat = new THREE.SpriteMaterial({
+        map: glowTex,
+        transparent: true,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        opacity: n.type === 'vc' ? 0.7 : 0.5,
+      })
+      const glow = new THREE.Sprite(glowMat.clone())
+      glow.name = 'glow'
+      const glowScale = n.type === 'vc' ? radius * 6 : radius * 4.5
+      glow.scale.set(glowScale, glowScale, 1)
+      group.add(glow)
+    }
 
-    // Pulse ring for VC nodes — subtle animated ring
-    if (n.type === 'vc') {
+    // Pulse ring for VC nodes — skip on minimal perf tier
+    if (n.type === 'vc' && perfTier !== 'minimal') {
       const ringTex = getCachedRingTexture(n.glowColor || n.color)
       const ringMat = new THREE.SpriteMaterial({
         map: ringTex,
@@ -462,7 +505,7 @@ export function GraphCanvas({
     nodeObjectsRef.current.set(n.id, group)
 
     return group
-  }, [topVCIds])
+  }, [topVCIds, perfTier, geometryPool])
 
   // ─── Dynamic hover/select effects via material updates ─────────────────────
   useEffect(() => {
@@ -586,18 +629,17 @@ export function GraphCanvas({
       }}
       linkOpacity={0.6}
       linkDirectionalParticles={(link: any) => {
+        if (perfTier === 'minimal') return 0 // Skip particles on huge graphs
         const l = link as GraphLink
         if (l.type !== 'investment') return 0
-        // More particles for a richer feel
+        if (perfTier === 'reduced') return l.strength > 0.8 ? 1 : 0
         return l.strength > 0.8 ? 3 : l.strength > 0.5 ? 2 : 1
       }}
       linkDirectionalParticleWidth={(link: any) => {
         const l = link as GraphLink
-        // Larger, brighter particles
         return l.strength > 0.8 ? 2.5 : 1.8
       }}
       linkDirectionalParticleSpeed={(link: any) => {
-        // Randomized speeds for organic feel
         const l = link as GraphLink
         const base = l.strength > 0.8 ? 0.004 : 0.003
         return base + Math.random() * 0.002
@@ -605,8 +647,8 @@ export function GraphCanvas({
       linkDirectionalParticleColor={() => '#D9770688'}
       onNodeHover={handleNodeHover}
       onNodeClick={handleNodeClick}
-      warmupTicks={FORCE_CONFIG.warmupTicks}
-      cooldownTime={3000}
+      warmupTicks={forceConfig.warmupTicks}
+      cooldownTime={forceConfig.cooldownTime}
       enableNodeDrag={true}
       enableNavigationControls={true}
       showNavInfo={false}

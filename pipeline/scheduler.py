@@ -562,8 +562,11 @@ class PipelineScheduler:
             "name": name,
             "slug": slug,
             "website": vc_config.get("website"),
-            "fund_stage": vc_config.get("fund_stage", []),
+            "fund_stage": vc_config.get("stage_focus", vc_config.get("fund_stage", [])),
             "focus_sectors": vc_config.get("focus_sectors", []),
+            "hq_city": vc_config.get("hq_city"),
+            "hq_country": vc_config.get("hq_country"),
+            "hq_region": vc_config.get("hq_region"),
         }
 
         try:
@@ -908,6 +911,17 @@ Examples:
         action="store_true",
         help="Skip founder enrichment (useful when Serper is out of credits)",
     )
+    parser.add_argument(
+        "--skip-existing",
+        action="store_true",
+        help="Skip VCs that already exist in the database",
+    )
+    parser.add_argument(
+        "--batch-size",
+        type=int,
+        default=0,
+        help="Process only this many VCs (0 = all)",
+    )
     return parser.parse_args(argv)
 
 
@@ -926,7 +940,34 @@ async def async_main(args: argparse.Namespace) -> None:
         return
 
     scheduler = PipelineScheduler(skip_founders=args.skip_founders)
-    results = await scheduler.run_full_pipeline(vc_slugs=args.vcs)
+
+    vc_slugs = args.vcs
+
+    # --skip-existing: filter out VCs already in the database
+    if args.skip_existing and scheduler._supabase:
+        existing = scheduler._supabase.table("vc_firms").select("slug").execute()
+        existing_slugs = {r["slug"] for r in existing.data}
+        configs = _load_vc_configs()
+        # Only keep VCs with portfolio_urls that aren't already in DB
+        candidates = [
+            c.get("slug") for c in configs
+            if c.get("portfolio_urls") and c.get("slug") not in existing_slugs
+        ]
+        if vc_slugs:
+            candidates = [s for s in candidates if s in set(vc_slugs)]
+        vc_slugs = candidates
+        logger.info("After --skip-existing filter: %d VCs to process", len(vc_slugs))
+
+    # --batch-size: limit number of VCs processed
+    if args.batch_size > 0 and vc_slugs:
+        vc_slugs = vc_slugs[:args.batch_size]
+        logger.info("Batch limited to %d VCs", len(vc_slugs))
+
+    if vc_slugs is not None and len(vc_slugs) == 0:
+        logger.info("No VCs to process (all existing or none match filters)")
+        return
+
+    results = await scheduler.run_full_pipeline(vc_slugs=vc_slugs)
 
     # Print summary
     for result in results:
